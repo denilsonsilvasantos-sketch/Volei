@@ -1,0 +1,5 @@
+{
+  "name": "Vôlei Pro - Placar & Sorteio",
+  "description": "Aplicativo profissional para marcação de placar de vôlei e sorteio inteligente de times com persistência no Supabase.",
+  "requestFramePermissions": []
+}

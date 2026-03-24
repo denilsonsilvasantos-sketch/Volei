@@ -1,0 +1,110 @@
+import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Trophy, 
+  Users, 
+  Settings as SettingsIcon, 
+  History, 
+  LayoutDashboard,
+  X,
+  Menu
+} from 'lucide-react';
+import { View } from '../types';
+import { cn } from '../lib/utils';
+
+interface SidebarProps {
+  currentView: View;
+  onViewChange: (view: View) => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const menuItems = [
+    { id: 'scoreboard', label: 'Placar', icon: LayoutDashboard },
+    { id: 'players', label: 'Jogadores', icon: Users },
+    { id: 'shuffler', label: 'Sorteador', icon: Trophy },
+    { id: 'history', label: 'Histórico', icon: History },
+    { id: 'settings', label: 'Configurações', icon: SettingsIcon },
+  ];
+
+  return (
+    <>
+      {/* Mobile Toggle */}
+      <button 
+        onClick={() => setIsOpen(true)}
+        className="fixed top-6 left-6 z-50 p-3 bg-slate-900/80 backdrop-blur-md rounded-2xl text-white border border-white/10 shadow-2xl md:hidden active:scale-90 transition-transform"
+      >
+        <Menu size={24} />
+      </button>
+
+      {/* Backdrop */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar Content */}
+      <motion.aside
+        initial={false}
+        animate={{ x: isOpen ? 0 : -300 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className={cn(
+          "fixed top-0 left-0 h-full w-64 bg-slate-900 text-white z-[70] p-6 flex flex-col shadow-2xl md:translate-x-0 md:static",
+          !isOpen && "hidden md:flex"
+        )}
+      >
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/20">
+              <Trophy size={20} className="text-white" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">Vôlei Pro</h1>
+          </div>
+          <button onClick={() => setIsOpen(false)} className="md:hidden">
+            <X size={24} />
+          </button>
+        </div>
+
+        <nav className="flex-1 space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentView === item.id;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  onViewChange(item.id as View);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group",
+                  isActive 
+                    ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30" 
+                    : "hover:bg-white/5 text-slate-400 hover:text-white"
+                )}
+              >
+                <Icon size={20} className={cn(isActive ? "text-white" : "group-hover:text-white")} />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto pt-6 border-t border-white/10">
+          <p className="text-xs text-slate-500 text-center uppercase tracking-widest font-semibold">
+            v1.0.0
+          </p>
+        </div>
+      </motion.aside>
+    </>
+  );
+};
