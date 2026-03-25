@@ -7,7 +7,8 @@ import {
   History, 
   LayoutDashboard,
   X,
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-react';
 import { View } from '../types';
 import { cn } from '../lib/utils';
@@ -15,9 +16,10 @@ import { cn } from '../lib/utils';
 interface SidebarProps {
   currentView: View;
   onViewChange: (view: View) => void;
+  onLogout: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
   const menuItems = [
@@ -99,7 +101,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
           })}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-white/10">
+        <div className="mt-auto pt-6 border-t border-white/10 space-y-4">
+          <button 
+            onClick={onLogout}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all duration-200"
+          >
+            <LogOut size={20} />
+            <span className="font-medium">Sair da Turma</span>
+          </button>
           <p className="text-xs text-slate-500 text-center uppercase tracking-widest font-semibold">
             v1.0.0
           </p>

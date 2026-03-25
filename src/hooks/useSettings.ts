@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Settings } from '../types';
+import { io, Socket } from 'socket.io-client';
 
 const DEFAULT_SETTINGS: Settings = {
   points_per_set: 25,
@@ -11,46 +12,46 @@ const DEFAULT_SETTINGS: Settings = {
   team_b_name: 'Time B',
 };
 
-export function useSettings() {
+export function useSettings(groupId: string | null) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const socketRef = useRef<Socket | null>(null);
+  const isRemoteUpdate = useRef(false);
 
   useEffect(() => {
-    async function fetchSettings() {
-      if (!isSupabaseConfigured) {
-        const local = localStorage.getItem('voley_settings');
-        if (local) setSettings(JSON.parse(local));
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .single();
-
-      if (data) {
-        setSettings(data);
-      } else if (error && error.code === 'PGRST116') {
-        // No settings found, create default
-        await supabase.from('settings').insert([DEFAULT_SETTINGS]);
-      }
-      setLoading(false);
-    }
-
     fetchSettings();
-  }, []);
+
+    if (groupId) {
+      const socket = io();
+      socketRef.current = socket;
+      socket.emit('join-group', groupId + '_settings');
+      socket.on('sync-state', (newState: Settings) => {
+        isRemoteUpdate.current = true;
+        setSettings(newState);
+        localStorage.setItem('voley_settings_' + groupId, JSON.stringify(newState));
+        setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+      });
+      return () => { socket.disconnect(); };
+    }
+  }, [groupId]);
+
+  useEffect(() => {
+    if (!groupId || !socketRef.current || isRemoteUpdate.current || loading) return;
+    socketRef.current.emit('update-state', { groupId: groupId + '_settings', state: settings });
+  }, [settings, groupId]);
+
+  async function fetchSettings() {
+    if (groupId) {
+      const local = localStorage.getItem('voley_settings_' + groupId);
+      if (local) setSettings(JSON.parse(local));
+    }
+    setLoading(false);
+  }
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
-
-    if (!isSupabaseConfigured) {
-      localStorage.setItem('voley_settings', JSON.stringify(updated));
-      return;
-    }
-
-    await supabase.from('settings').upsert(updated);
+    if (groupId) localStorage.setItem('voley_settings_' + groupId, JSON.stringify(updated));
   };
 
   return { settings, updateSettings, loading };

@@ -4,18 +4,28 @@ import { Player } from '../types';
 import { Trophy, RefreshCw, Save, UserPlus, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useSync } from '../hooks/useSync';
 
 interface ShufflerPageProps {
   players: Player[];
+  groupId: string;
 }
 
-export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players }) => {
+export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) => {
   const [numTeams, setNumTeams] = useState(2);
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
   const [tempPlayers, setTempPlayers] = useState<string[]>([]);
   const [newTempName, setNewTempName] = useState('');
   const [generatedTeams, setGeneratedTeams] = useState<string[][]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
+
+  // Sync shuffler state
+  useSync(groupId + '_shuffler', { numTeams, playersPerTeam, tempPlayers, generatedTeams }, (newState) => {
+    if (newState.numTeams !== undefined) setNumTeams(newState.numTeams);
+    if (newState.playersPerTeam !== undefined) setPlayersPerTeam(newState.playersPerTeam);
+    if (newState.tempPlayers !== undefined) setTempPlayers(newState.tempPlayers);
+    if (newState.generatedTeams !== undefined) setGeneratedTeams(newState.generatedTeams);
+  });
 
   const activePlayers = players.filter(p => p.active).map(p => p.name);
   const allAvailable = [...activePlayers, ...tempPlayers];
@@ -57,17 +67,14 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players }) => {
   const saveDraw = async () => {
     if (generatedTeams.length === 0) return;
     
-    if (!isSupabaseConfigured) {
-      const history = JSON.parse(localStorage.getItem('voley_draws') || '[]');
-      localStorage.setItem('voley_draws', JSON.stringify([{
+    if (groupId) {
+      const history = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
+      localStorage.setItem('voley_draws_' + groupId, JSON.stringify([{
         id: crypto.randomUUID(),
         teams: generatedTeams,
         created_at: new Date().toISOString()
       }, ...history]));
-      return;
     }
-
-    await supabase.from('draws').insert([{ teams: generatedTeams }]);
   };
 
   return (

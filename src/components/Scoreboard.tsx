@@ -3,15 +3,17 @@ import { motion } from 'motion/react';
 import { RotateCcw, Undo2, Play, Pause, RefreshCw, X, Save } from 'lucide-react';
 import { Match, Settings } from '../types';
 import { useTimer } from '../hooks/useTimer';
+import { useSync } from '../hooks/useSync';
 import { formatTime } from '../lib/utils';
 import { cn } from '../lib/utils';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface ScoreboardProps {
   settings: Settings;
+  groupId: string;
 }
 
-export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
+export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => {
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
   const [setsA, setSetsA] = useState(0);
@@ -20,7 +22,18 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
   const [history, setHistory] = useState<{ a: number; b: number }[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   
-  const { seconds, isActive, toggleTimer, resetTimer } = useTimer();
+  const { seconds, isActive, toggleTimer, resetTimer, setSeconds, setIsActive } = useTimer();
+
+  // Sync state with the group
+  useSync(groupId, { scoreA, scoreB, setsA, setsB, isSwapped, seconds, isActive }, (newState) => {
+    if (newState.scoreA !== undefined) setScoreA(newState.scoreA);
+    if (newState.scoreB !== undefined) setScoreB(newState.scoreB);
+    if (newState.setsA !== undefined) setSetsA(newState.setsA);
+    if (newState.setsB !== undefined) setSetsB(newState.setsB);
+    if (newState.isSwapped !== undefined) setIsSwapped(newState.isSwapped);
+    if (newState.seconds !== undefined) setSeconds(newState.seconds);
+    if (newState.isActive !== undefined) setIsActive(newState.isActive);
+  });
 
   const saveMatch = async () => {
     if (setsA === 0 && setsB === 0 && scoreA === 0 && scoreB === 0) return;
@@ -34,14 +47,12 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
       created_at: new Date().toISOString()
     };
 
-    if (!isSupabaseConfigured) {
-      const localMatches = JSON.parse(localStorage.getItem('voley_matches') || '[]');
-      localStorage.setItem('voley_matches', JSON.stringify([{
+    if (groupId) {
+      const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
+      localStorage.setItem('voley_matches_' + groupId, JSON.stringify([{
         id: crypto.randomUUID(),
         ...matchData
       }, ...localMatches]));
-    } else {
-      await supabase.from('matches').insert([matchData]);
     }
 
     setIsSaving(false);
@@ -50,6 +61,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
   };
 
   const addPoint = (team: 'A' | 'B') => {
+    if (!isActive) toggleTimer();
     setHistory([...history, { a: scoreA, b: scoreB }]);
     if (team === 'A') {
       const newScore = scoreA + 1;
@@ -138,8 +150,22 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
       <motion.span 
         key={score}
         initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[10rem] landscape:md:text-[16rem] font-black text-white leading-none z-10 drop-shadow-2xl"
+        animate={{ 
+          y: 0, 
+          opacity: 1,
+          scale: isActive ? [1, 1.02, 1] : 1
+        }}
+        transition={{
+          scale: {
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }
+        }}
+        className={cn(
+          "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[10rem] landscape:md:text-[16rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity",
+          isActive && "animate-pulse"
+        )}
       >
         {score}
       </motion.span>
@@ -175,11 +201,14 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
             "absolute bg-gradient-to-b from-transparent via-white/40 to-transparent",
             "portrait:w-full portrait:h-px landscape:h-full landscape:w-px"
           )} />
-          <div className="bg-slate-900 px-6 py-3 rounded-2xl border border-white/20 shadow-2xl backdrop-blur-md">
+          <button 
+            onClick={toggleTimer}
+            className="bg-slate-900 px-6 py-3 rounded-2xl border border-white/20 shadow-2xl backdrop-blur-md active:scale-95 transition-transform cursor-pointer"
+          >
             <span className="text-3xl md:text-4xl font-mono font-black text-orange-500 tabular-nums">
               {formatTime(seconds)}
             </span>
-          </div>
+          </button>
         </div>
 
         <TeamSide {...teamBData} />

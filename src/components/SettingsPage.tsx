@@ -11,6 +11,11 @@ interface SettingsPageProps {
 export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate }) => {
   const [formData, setFormData] = useState(settings);
 
+  // Update local form if settings change from server
+  useEffect(() => {
+    setFormData(settings);
+  }, [settings]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdate(formData);

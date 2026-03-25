@@ -5,27 +5,21 @@ import { History as HistoryIcon, Trophy, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export const HistoryPage: React.FC = () => {
+interface HistoryPageProps {
+  groupId: string;
+}
+
+export const HistoryPage: React.FC<HistoryPageProps> = ({ groupId }) => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [draws, setDraws] = useState<Draw[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
-      if (!isSupabaseConfigured) {
-        const localMatches = JSON.parse(localStorage.getItem('voley_matches') || '[]');
-        const localDraws = JSON.parse(localStorage.getItem('voley_draws') || '[]');
-        setMatches(localMatches);
-        setDraws(localDraws);
-        setLoading(false);
-        return;
-      }
-
-      const { data: mData } = await supabase.from('matches').select('*').order('created_at', { ascending: false });
-      const { data: dData } = await supabase.from('draws').select('*').order('created_at', { ascending: false });
-      
-      if (mData) setMatches(mData);
-      if (dData) setDraws(dData);
+      const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
+      const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
+      setMatches(localMatches);
+      setDraws(localDraws);
       setLoading(false);
     }
 
