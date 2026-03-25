@@ -146,20 +146,13 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
         {name}
       </h2>
       
-      <motion.span 
-        key={score}
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ 
-          y: 0, 
-          opacity: 1,
-          scale: 1
-        }}
+      <span 
         className={cn(
           "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[7rem] landscape:md:text-[12rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity"
         )}
       >
         {score}
-      </motion.span>
+      </span>
 
       <div className="absolute bottom-10 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 text-sm font-medium uppercase tracking-tighter">
         Toque para pontuar
