@@ -28,9 +28,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onL
 
   React.useEffect(() => {
     if (isSupabaseConfigured) {
-      // We'll just assume it's ok for now if configured, 
-      // or we could call the test function here too.
-      setSupabaseOk(true);
+      testSupabaseConnection().then(result => {
+        setSupabaseOk(result.success);
+      });
     } else {
       setSupabaseOk(false);
     }

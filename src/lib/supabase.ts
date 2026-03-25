@@ -20,22 +20,21 @@ export async function testSupabaseConnection() {
     return { success: false, message: 'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.' };
   }
   try {
-    // We'll just try to fetch something to see if we can connect.
-    // Even if the table doesn't exist, if we get an error that isn't a connection error, it means we connected.
-    const { error } = await supabase.from('_test_connection').select('*').limit(1);
+    // Use getSession() to test connectivity without needing a specific table
+    const { error } = await supabase.auth.getSession();
     
-    // If we get an error, check if it's a connection error.
     if (error) {
-      // PGRST116 means the table doesn't exist, which is fine for a connection test.
-      // 404 is also fine.
-      if (error.code === 'PGRST116') {
-        return { success: true, message: 'Connected to Supabase (Table not found, but connection established).' };
-      }
+      // If we get an auth error, it might still mean we connected to Supabase
+      // but the key/URL might have issues with Auth.
+      // However, usually getSession() just returns null session if not logged in.
       throw error;
     }
+    
     return { success: true, message: 'Connected to Supabase successfully.' };
   } catch (error: any) {
     console.error('Supabase connection test failed:', error);
+    // If it's a network error, it's a real failure.
+    // If it's an API error, it means we at least reached Supabase.
     return { success: false, message: error.message || 'Unknown error connecting to Supabase' };
   }
 }
