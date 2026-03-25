@@ -1,37 +1,46 @@
 import { useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { db, handleFirestoreError, OperationType } from '../firebase';
+import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 
 export function useSync(groupId: string | null, state: any, onSync: (state: any) => void) {
-  const socketRef = useRef<Socket | null>(null);
   const isRemoteUpdate = useRef(false);
+  const hasSynced = useRef(false);
 
   useEffect(() => {
     if (!groupId) return;
 
-    // Connect to the same origin
-    const socket = io();
-    socketRef.current = socket;
+    const docRef = doc(db, 'groups', groupId);
 
-    socket.emit('join-group', groupId);
-
-    socket.on('sync-state', (newState: any) => {
-      isRemoteUpdate.current = true;
-      onSync(newState);
-      // Reset after a short delay to allow state to settle
-      setTimeout(() => {
-        isRemoteUpdate.current = false;
-      }, 100);
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        // We only care about the scoreState part for this hook
+        if (data.scoreState) {
+          isRemoteUpdate.current = true;
+          hasSynced.current = true;
+          onSync(data.scoreState);
+          setTimeout(() => {
+            isRemoteUpdate.current = false;
+          }, 100);
+        }
+      } else {
+        // If doc doesn't exist, we are the first
+        hasSynced.current = true;
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `groups/${groupId}`);
     });
 
-    return () => {
-      socket.disconnect();
-    };
+    return () => unsubscribe();
   }, [groupId]);
 
   useEffect(() => {
-    if (!groupId || !socketRef.current || isRemoteUpdate.current) return;
+    if (!groupId || isRemoteUpdate.current || !hasSynced.current) return;
 
-    // Emit local changes to the group
-    socketRef.current.emit('update-state', { groupId, state });
+    const docRef = doc(db, 'groups', groupId);
+    
+    // Use setDoc with merge to ensure the document exists
+    setDoc(docRef, { scoreState: state }, { merge: true })
+      .catch(error => handleFirestoreError(error, OperationType.WRITE, `groups/${groupId}`));
   }, [state, groupId]);
 }

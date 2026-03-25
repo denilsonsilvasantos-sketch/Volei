@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "Group": {
+      "title": "Group",
+      "description": "A group of players and their current match state.",
+      "type": "object",
+      "properties": {
+        "settings": {
+          "type": "object",
+          "description": "Application settings for the group."
+        },
+        "scoreState": {
+          "type": "object",
+          "description": "Current score and set state."
+        }
+      }
+    },
+    "Player": {
+      "title": "Player",
+      "description": "A player registered in a group.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "name", "active"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "A completed match history record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "team_a_score": { "type": "integer" },
+        "team_b_score": { "type": "integer" },
+        "sets_a": { "type": "integer" },
+        "sets_b": { "type": "integer" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "team_a_score", "team_b_score", "sets_a", "sets_b", "created_at"]
+    },
+    "Draw": {
+      "title": "Draw",
+      "description": "A team shuffle history record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "teams": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "teams", "created_at"]
+    }
+  },
+  "firestore": {
+    "/groups/{groupId}": {
+      "schema": "Group",
+      "description": "Main group document containing settings and current score."
+    },
+    "/groups/{groupId}/players/{playerId}": {
+      "schema": "Player",
+      "description": "Collection of players in the group."
+    },
+    "/groups/{groupId}/matches/{matchId}": {
+      "schema": "Match",
+      "description": "History of matches for the group."
+    },
+    "/groups/{groupId}/draws/{drawId}": {
+      "schema": "Draw",
+      "description": "History of draws for the group."
+    }
+  }
+}

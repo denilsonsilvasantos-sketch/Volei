@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Player } from '../types';
+import { Player, Draw } from '../types';
 import { Trophy, RefreshCw, Save, UserPlus, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useSync } from '../hooks/useSync';
@@ -8,9 +8,10 @@ import { useSync } from '../hooks/useSync';
 interface ShufflerPageProps {
   players: Player[];
   groupId: string;
+  onSaveDraw: (draw: Draw) => void;
 }
 
-export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) => {
+export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId, onSaveDraw }) => {
   const [numTeams, setNumTeams] = useState(2);
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
   const [autoTeams, setAutoTeams] = useState(true);
@@ -99,14 +100,13 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
   const saveDraw = async () => {
     if (generatedTeams.length === 0) return;
     
-    if (groupId) {
-      const history = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
-      localStorage.setItem('voley_draws_' + groupId, JSON.stringify([{
-        id: crypto.randomUUID(),
-        teams: generatedTeams,
-        created_at: new Date().toISOString()
-      }, ...history]));
-    }
+    const drawData: Draw = {
+      id: crypto.randomUUID(),
+      teams: generatedTeams,
+      created_at: new Date().toISOString()
+    };
+
+    onSaveDraw(drawData);
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Undo2, Play, Pause, RefreshCw, X, Save } from 'lucide-react';
 import { Match, Settings } from '../types';
 import { useTimer } from '../hooks/useTimer';
@@ -10,9 +10,10 @@ import { cn } from '../lib/utils';
 interface ScoreboardProps {
   settings: Settings;
   groupId: string;
+  onSaveMatch: (match: Match) => void;
 }
 
-export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => {
+export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId, onSaveMatch }) => {
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
   const [setsA, setSetsA] = useState(0);
@@ -20,6 +21,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
   const [isSwapped, setIsSwapped] = useState(false);
   const [history, setHistory] = useState<{ a: number; b: number }[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSavedToast, setShowSavedToast] = useState(false);
   
   const { seconds, isActive, toggleTimer, resetTimer, setSeconds, setIsActive } = useTimer();
 
@@ -50,9 +52,22 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
 
   const speak = (text: string) => {
     if (!settings.enable_voice) return;
-    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Replace "Time" with "Equipe" to avoid English pronunciation
+    const localizedText = text.replace(/Time/gi, 'Equipe');
+    
+    const utterance = new SpeechSynthesisUtterance(localizedText);
     utterance.lang = 'pt-BR';
-    utterance.rate = 1.2;
+    utterance.rate = 1.1;
+
+    // Try to find a male voice
+    const voices = window.speechSynthesis.getVoices();
+    const maleVoice = voices.find(v => v.lang.startsWith('pt') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('masculino') || v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('google português do brasil')));
+    
+    if (maleVoice) {
+      utterance.voice = maleVoice;
+    }
+    
     window.speechSynthesis.speak(utterance);
   };
 
@@ -71,7 +86,8 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
     if (setsA === 0 && setsB === 0 && scoreA === 0 && scoreB === 0) return;
     
     setIsSaving(true);
-    const matchData = {
+    const matchData: Match = {
+      id: crypto.randomUUID(),
       team_a_score: scoreA,
       team_b_score: scoreB,
       sets_a: setsA,
@@ -79,17 +95,12 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
       created_at: new Date().toISOString()
     };
 
-    if (groupId) {
-      const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
-      localStorage.setItem('voley_matches_' + groupId, JSON.stringify([{
-        id: crypto.randomUUID(),
-        ...matchData
-      }, ...localMatches]));
-    }
+    onSaveMatch(matchData);
 
     setIsSaving(false);
+    setShowSavedToast(true);
+    setTimeout(() => setShowSavedToast(false), 3000);
     resetGame();
-    alert('Partida salva com sucesso no histórico!');
   };
 
   const addPoint = (team: 'A' | 'B') => {
@@ -259,6 +270,21 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
 
         <TeamSide {...teamBData} />
       </div>
+
+      {/* Saved Toast */}
+      <AnimatePresence>
+        {showSavedToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="absolute bottom-32 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl flex items-center gap-2"
+          >
+            <Save size={20} />
+            Partida Salva!
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Controls Bar */}
       <div className={cn(

@@ -1,33 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import React from 'react';
 import { Match, Draw } from '../types';
 import { History as HistoryIcon, Trophy, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface HistoryPageProps {
-  groupId: string;
+  matches: Match[];
+  draws: Draw[];
 }
 
-export const HistoryPage: React.FC<HistoryPageProps> = ({ groupId }) => {
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [draws, setDraws] = useState<Draw[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
-      const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
-      setMatches(localMatches);
-      setDraws(localDraws);
-      setLoading(false);
-    }
-
-    fetchData();
-  }, []);
-
-  if (loading) return <div className="p-10 text-center text-white">Carregando...</div>;
-
+export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws }) => {
   return (
     <div className="h-full overflow-y-auto p-6 pt-20 md:pt-6 max-w-5xl mx-auto space-y-12">
       <header className="text-center">
