@@ -1,64 +1,70 @@
 import { useState, useEffect, useRef } from 'react';
 import { Match, Draw } from '../types';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, onSnapshot, doc, setDoc, query, orderBy } from 'firebase/firestore';
+import { io, Socket } from 'socket.io-client';
 
 export function useHistory(groupId: string | null) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [draws, setDraws] = useState<Draw[]>([]);
   const [loading, setLoading] = useState(true);
+  const socketRef = useRef<Socket | null>(null);
+  const isRemoteUpdate = useRef(false);
+  const hasSynced = useRef(false);
 
   useEffect(() => {
-    if (!groupId) {
-      setLoading(false);
-      return;
+    if (groupId) {
+      const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
+      const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
+      setMatches(localMatches);
+      setDraws(localDraws);
+
+      const socket = io();
+      socketRef.current = socket;
+      socket.emit('join-group', groupId + '_history');
+      
+      socket.on('sync-state', (newState: { matches: Match[], draws: Draw[] }) => {
+        isRemoteUpdate.current = true;
+        hasSynced.current = true;
+        if (newState.matches) {
+          setMatches(newState.matches);
+          localStorage.setItem('voley_matches_' + groupId, JSON.stringify(newState.matches));
+        }
+        if (newState.draws) {
+          setDraws(newState.draws);
+          localStorage.setItem('voley_draws_' + groupId, JSON.stringify(newState.draws));
+        }
+        setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+      });
+
+      const timeout = setTimeout(() => {
+        hasSynced.current = true;
+      }, 1000);
+
+      return () => { 
+        socket.disconnect(); 
+        clearTimeout(timeout);
+      };
     }
-
-    const matchesCol = collection(db, 'groups', groupId, 'matches');
-    const matchesQuery = query(matchesCol, orderBy('created_at', 'desc'));
-
-    const unsubscribeMatches = onSnapshot(matchesQuery, (snapshot) => {
-      const matchesList: Match[] = [];
-      snapshot.forEach((doc) => {
-        matchesList.push(doc.data() as Match);
-      });
-      setMatches(matchesList);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `groups/${groupId}/matches`);
-    });
-
-    const drawsCol = collection(db, 'groups', groupId, 'draws');
-    const drawsQuery = query(drawsCol, orderBy('created_at', 'desc'));
-
-    const unsubscribeDraws = onSnapshot(drawsQuery, (snapshot) => {
-      const drawsList: Draw[] = [];
-      snapshot.forEach((doc) => {
-        drawsList.push(doc.data() as Draw);
-      });
-      setDraws(drawsList);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `groups/${groupId}/draws`);
-    });
-
-    return () => {
-      unsubscribeMatches();
-      unsubscribeDraws();
-    };
+    setLoading(false);
   }, [groupId]);
 
-  const addMatch = async (match: Match) => {
-    if (!groupId) return;
-    const docRef = doc(db, 'groups', groupId, 'matches', match.id);
-    await setDoc(docRef, match)
-      .catch(error => handleFirestoreError(error, OperationType.WRITE, `groups/${groupId}/matches/${match.id}`));
+  useEffect(() => {
+    if (!groupId || !socketRef.current || isRemoteUpdate.current || loading || !hasSynced.current) return;
+    socketRef.current.emit('update-state', { 
+      groupId: groupId + '_history', 
+      state: { matches, draws } 
+    });
+  }, [matches, draws, groupId]);
+
+  const addMatch = (match: Match) => {
+    const updated = [match, ...matches];
+    setMatches(updated);
+    if (groupId) localStorage.setItem('voley_matches_' + groupId, JSON.stringify(updated));
   };
 
-  const addDraw = async (draw: Draw) => {
-    if (!groupId) return;
-    const docRef = doc(db, 'groups', groupId, 'draws', draw.id);
-    await setDoc(docRef, draw)
-      .catch(error => handleFirestoreError(error, OperationType.WRITE, `groups/${groupId}/draws/${draw.id}`));
+  const addDraw = (draw: Draw) => {
+    const updated = [draw, ...draws];
+    setDraws(updated);
+    if (groupId) localStorage.setItem('voley_draws_' + groupId, JSON.stringify(updated));
   };
 
   return { matches, draws, addMatch, addDraw, loading };
