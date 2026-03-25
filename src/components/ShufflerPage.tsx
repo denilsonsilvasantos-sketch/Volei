@@ -14,20 +14,38 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
   const [numTeams, setNumTeams] = useState(2);
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
   const [tempPlayers, setTempPlayers] = useState<string[]>([]);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [newTempName, setNewTempName] = useState('');
   const [generatedTeams, setGeneratedTeams] = useState<string[][]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
 
+  // Initialize selected players from the main list (only those active)
+  React.useEffect(() => {
+    if (selectedPlayerIds.length === 0 && players.length > 0) {
+      setSelectedPlayerIds(players.filter(p => p.active).map(p => p.id));
+    }
+  }, [players]);
+
   // Sync shuffler state
-  useSync(groupId + '_shuffler', { numTeams, playersPerTeam, tempPlayers, generatedTeams }, (newState) => {
+  useSync(groupId + '_shuffler', { numTeams, playersPerTeam, tempPlayers, generatedTeams, selectedPlayerIds }, (newState) => {
     if (newState.numTeams !== undefined) setNumTeams(newState.numTeams);
     if (newState.playersPerTeam !== undefined) setPlayersPerTeam(newState.playersPerTeam);
     if (newState.tempPlayers !== undefined) setTempPlayers(newState.tempPlayers);
     if (newState.generatedTeams !== undefined) setGeneratedTeams(newState.generatedTeams);
+    if (newState.selectedPlayerIds !== undefined) setSelectedPlayerIds(newState.selectedPlayerIds);
   });
 
-  const activePlayers = players.filter(p => p.active).map(p => p.name);
-  const allAvailable = [...activePlayers, ...tempPlayers];
+  const selectedRegisteredNames = players
+    .filter(p => selectedPlayerIds.includes(p.id))
+    .map(p => p.name);
+  
+  const allAvailable = [...selectedRegisteredNames, ...tempPlayers];
+
+  const togglePlayerSelection = (id: string) => {
+    setSelectedPlayerIds(prev => 
+      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+    );
+  };
 
   const handleAddTemp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,25 +153,53 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
           </section>
 
           <section className="bg-slate-900/50 border border-white/10 rounded-3xl p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-white">Jogadores Avulsos</h2>
+            <h2 className="text-lg font-semibold text-white">Jogadores Cadastrados</h2>
+            <p className="text-xs text-slate-500">Selecione quem vai participar do sorteio hoje:</p>
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+              {players.map(player => (
+                <button
+                  key={player.id}
+                  onClick={() => togglePlayerSelection(player.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border",
+                    selectedPlayerIds.includes(player.id)
+                      ? "bg-orange-500/20 border-orange-500/50 text-orange-500"
+                      : "bg-slate-800/50 border-white/5 text-slate-500 grayscale opacity-50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    selectedPlayerIds.includes(player.id) ? "bg-orange-500" : "bg-slate-600"
+                  )} />
+                  <span className="truncate">{player.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-slate-900/50 border border-white/10 rounded-3xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Avulsos (Temporários)</h2>
+              <span className="text-xs text-slate-500">{tempPlayers.length} adicionados</span>
+            </div>
             <form onSubmit={handleAddTemp} className="flex gap-2">
               <input 
                 type="text"
-                placeholder="Nome..."
+                placeholder="Nome do avulso..."
                 value={newTempName}
                 onChange={e => setNewTempName(e.target.value)}
                 className="flex-1 bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:ring-1 focus:ring-orange-500"
               />
-              <button type="submit" className="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-white transition-colors">
+              <button type="submit" className="bg-orange-500 hover:bg-orange-600 p-2 rounded-xl text-white transition-colors">
                 <UserPlus size={20} />
               </button>
             </form>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
               {tempPlayers.map((name, i) => (
-                <span key={i} className="flex items-center gap-1 bg-orange-500/20 text-orange-500 px-3 py-1 rounded-full text-sm font-medium">
+                <span key={i} className="flex items-center gap-1 bg-slate-800 text-slate-300 px-3 py-1.5 rounded-full text-xs font-medium border border-white/5">
                   {name}
-                  <button onClick={() => removeTemp(i)} className="hover:text-white">
+                  <button onClick={() => removeTemp(i)} className="hover:text-red-500 ml-1">
                     <X size={14} />
                   </button>
                 </span>
