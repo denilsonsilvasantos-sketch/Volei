@@ -44,10 +44,10 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-[100dvh] w-full bg-slate-950 text-slate-100 overflow-hidden font-sans">
       <Sidebar currentView={currentView} onViewChange={setCurrentView} />
       
-      <main className="flex-1 relative overflow-y-auto">
+      <main className="flex-1 relative overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}
@@ -55,7 +55,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
-            className="h-full"
+            className="h-full w-full"
           >
             {renderView()}
           </motion.div>

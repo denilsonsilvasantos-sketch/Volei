@@ -139,7 +139,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
         key={score}
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[8rem] landscape:md:text-[14rem] font-black text-white leading-none z-10 drop-shadow-2xl"
+        className="text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[10rem] landscape:md:text-[16rem] font-black text-white leading-none z-10 drop-shadow-2xl"
       >
         {score}
       </motion.span>
@@ -188,7 +188,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings }) => {
       {/* Controls Bar */}
       <div className={cn(
         "bg-slate-900/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-center gap-4 md:gap-8 px-6 z-30 transition-all",
-        "portrait:h-24 landscape:h-20"
+        "portrait:h-24 landscape:h-16"
       )}>
         <button 
           onClick={undoPoint}
