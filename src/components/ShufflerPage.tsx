@@ -13,6 +13,7 @@ interface ShufflerPageProps {
 export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) => {
   const [numTeams, setNumTeams] = useState(2);
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
+  const [autoTeams, setAutoTeams] = useState(true);
   const [tempPlayers, setTempPlayers] = useState<string[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [newTempName, setNewTempName] = useState('');
@@ -27,12 +28,13 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
   }, [players]);
 
   // Sync shuffler state
-  useSync(groupId + '_shuffler', { numTeams, playersPerTeam, tempPlayers, generatedTeams, selectedPlayerIds }, (newState) => {
+  useSync(groupId + '_shuffler', { numTeams, playersPerTeam, tempPlayers, generatedTeams, selectedPlayerIds, autoTeams }, (newState) => {
     if (newState.numTeams !== undefined) setNumTeams(newState.numTeams);
     if (newState.playersPerTeam !== undefined) setPlayersPerTeam(newState.playersPerTeam);
     if (newState.tempPlayers !== undefined) setTempPlayers(newState.tempPlayers);
     if (newState.generatedTeams !== undefined) setGeneratedTeams(newState.generatedTeams);
     if (newState.selectedPlayerIds !== undefined) setSelectedPlayerIds(newState.selectedPlayerIds);
+    if (newState.autoTeams !== undefined) setAutoTeams(newState.autoTeams);
   });
 
   const selectedRegisteredNames = players
@@ -40,6 +42,16 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
     .map(p => p.name);
   
   const allAvailable = [...selectedRegisteredNames, ...tempPlayers];
+
+  // Auto-adjust number of teams
+  React.useEffect(() => {
+    if (autoTeams && allAvailable.length > 0) {
+      const calculated = Math.ceil(allAvailable.length / playersPerTeam);
+      if (calculated >= 2 && calculated <= 10) {
+        setNumTeams(calculated);
+      }
+    }
+  }, [autoTeams, allAvailable.length, playersPerTeam]);
 
   const togglePlayerSelection = (id: string) => {
     setSelectedPlayerIds(prev => 
@@ -69,12 +81,15 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
       
       const teams: string[][] = Array.from({ length: numTeams }, () => []);
       
-      shuffled.forEach((player, index) => {
-        const teamIndex = index % numTeams;
-        if (teams[teamIndex].length < playersPerTeam) {
-          teams[teamIndex].push(player);
+      let currentPlayerIndex = 0;
+      for (let t = 0; t < numTeams; t++) {
+        for (let p = 0; p < playersPerTeam; p++) {
+          if (currentPlayerIndex < shuffled.length) {
+            teams[t].push(shuffled[currentPlayerIndex]);
+            currentPlayerIndex++;
+          }
         }
-      });
+      }
 
       setGeneratedTeams(teams);
       setIsShuffling(false);
@@ -108,17 +123,30 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
             <h2 className="text-lg font-semibold text-white">Configuração</h2>
             
             <div className="space-y-4">
-              <div className="space-y-2">
+              <div className="flex items-center justify-between">
                 <label className="text-sm text-slate-400">Número de Times</label>
-                <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
-                    type="range" min="2" max="6" step="1"
-                    value={numTeams}
-                    onChange={e => setNumTeams(parseInt(e.target.value))}
-                    className="flex-1 accent-orange-500"
+                    type="checkbox" 
+                    checked={autoTeams}
+                    onChange={e => setAutoTeams(e.target.checked)}
+                    className="w-4 h-4 accent-orange-500 rounded"
                   />
-                  <span className="text-xl font-bold text-white w-8">{numTeams}</span>
-                </div>
+                  <span className="text-xs text-slate-500">Auto-ajustar</span>
+                </label>
+              </div>
+              <div className="flex items-center gap-4">
+                <input 
+                  type="range" min="2" max="10" step="1"
+                  value={numTeams}
+                  disabled={autoTeams}
+                  onChange={e => setNumTeams(parseInt(e.target.value))}
+                  className={cn(
+                    "flex-1 accent-orange-500",
+                    autoTeams && "opacity-30 cursor-not-allowed"
+                  )}
+                />
+                <span className="text-xl font-bold text-white w-8">{numTeams}</span>
               </div>
 
               <div className="space-y-2">
