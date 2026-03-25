@@ -74,7 +74,8 @@ export function useSettings(groupId: string | null) {
         if (local) {
           const parsed = JSON.parse(local);
           setSettings(parsed);
-          console.log('useSettings: Loaded from localStorage:', parsed);
+          setLoading(false); // Set to false immediately if we have local data
+          console.log('useSettings: Loaded from localStorage, UI ready');
         }
       } catch (e) {
         console.error('useSettings: Error parsing from localStorage:', e);
@@ -86,13 +87,13 @@ export function useSettings(groupId: string | null) {
         if (dbData) {
           setSettings(dbData);
           localStorage.setItem('voley_settings_' + groupId, JSON.stringify(dbData));
-          console.log('useSettings: Loaded from Supabase:', dbData);
+          console.log('useSettings: Synced from Supabase');
         }
       } catch (e) {
         console.error('useSettings: Error fetching from Supabase:', e);
       }
     }
-    setLoading(false);
+    setLoading(false); // Ensure loading is false even if no local data
     console.log('useSettings: Loading set to false');
   }
 

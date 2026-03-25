@@ -22,7 +22,8 @@ export function useHistory(groupId: string | null) {
           const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
           setMatches(localMatches);
           setDraws(localDraws);
-          console.log('useHistory: Loaded from localStorage');
+          setLoading(false); // Set to false immediately if we have local data
+          console.log('useHistory: Loaded from localStorage, UI ready');
         } catch (e) {
           console.error('useHistory: Error parsing from localStorage:', e);
         }
@@ -42,7 +43,7 @@ export function useHistory(groupId: string | null) {
             setDraws(dbDraws);
             localStorage.setItem('voley_draws_' + groupId, JSON.stringify(dbDraws));
           }
-          console.log('useHistory: Loaded from Supabase');
+          console.log('useHistory: Synced from Supabase');
         } catch (e) {
           console.error('useHistory: Error fetching from Supabase:', e);
         }

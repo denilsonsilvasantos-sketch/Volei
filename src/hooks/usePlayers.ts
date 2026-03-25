@@ -63,7 +63,8 @@ export function usePlayers(groupId: string | null) {
         if (local) {
           const parsed = JSON.parse(local);
           setPlayers(parsed);
-          console.log('usePlayers: Loaded from localStorage:', parsed);
+          setLoading(false); // Set to false immediately if we have local data
+          console.log('usePlayers: Loaded from localStorage, UI ready');
         }
       } catch (e) {
         console.error('usePlayers: Error parsing from localStorage:', e);
@@ -81,13 +82,13 @@ export function usePlayers(groupId: string | null) {
           }));
           setPlayers(mappedPlayers);
           localStorage.setItem('voley_players_' + groupId, JSON.stringify(mappedPlayers));
-          console.log('usePlayers: Loaded from Supabase:', mappedPlayers);
+          console.log('usePlayers: Synced from Supabase');
         }
       } catch (e) {
         console.error('usePlayers: Error fetching from Supabase:', e);
       }
     }
-    setLoading(false);
+    setLoading(false); // Ensure loading is false even if no local data
     console.log('usePlayers: Loading set to false');
   }
 
