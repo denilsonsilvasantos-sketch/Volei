@@ -6,7 +6,6 @@ import { useTimer } from '../hooks/useTimer';
 import { useSync } from '../hooks/useSync';
 import { formatTime } from '../lib/utils';
 import { cn } from '../lib/utils';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface ScoreboardProps {
   settings: Settings;

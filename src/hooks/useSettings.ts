@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Settings } from '../types';
 import { io, Socket } from 'socket.io-client';
 

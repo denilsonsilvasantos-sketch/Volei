@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Player } from '../types';
 import { Trophy, RefreshCw, Save, UserPlus, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useSync } from '../hooks/useSync';
 
 interface ShufflerPageProps {
