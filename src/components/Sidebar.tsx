@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onL
       {/* Mobile Toggle */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed top-6 left-6 z-50 p-3 bg-slate-900/80 backdrop-blur-md rounded-2xl text-white border border-white/10 shadow-2xl lg:hidden active:scale-90 transition-transform landscape:top-4 landscape:left-4"
+        className="fixed top-6 left-6 z-50 p-3 bg-slate-900/80 backdrop-blur-md rounded-2xl text-white border border-white/10 shadow-2xl xl:hidden active:scale-90 transition-transform landscape:top-4 landscape:left-4"
       >
         <Menu size={24} />
       </button>
@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onL
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] xl:hidden"
           />
         )}
       </AnimatePresence>
@@ -59,8 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onL
         animate={{ x: isOpen ? 0 : -300 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         className={cn(
-          "fixed top-0 left-0 h-full w-64 bg-slate-900 text-white z-[70] p-6 flex flex-col shadow-2xl lg:translate-x-0 lg:static",
-          !isOpen && "hidden lg:flex"
+          "fixed top-0 left-0 h-full w-64 bg-slate-900 text-white z-[70] p-6 flex flex-col shadow-2xl xl:translate-x-0 xl:static",
+          !isOpen && "hidden xl:flex"
         )}
       >
         <div className="flex items-center justify-between mb-10">
@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onL
             </div>
             <h1 className="text-xl font-bold tracking-tight">Vôlei Pro</h1>
           </div>
-          <button onClick={() => setIsOpen(false)} className="lg:hidden">
+          <button onClick={() => setIsOpen(false)} className="xl:hidden">
             <X size={24} />
           </button>
         </div>

@@ -130,7 +130,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
       />
       
       {/* Set indicators */}
-      <div className="absolute top-8 flex gap-2">
+      <div className="absolute top-8 landscape:top-4 flex gap-2">
         {Array.from({ length: Math.ceil(settings.max_sets / 2) + 1 }).map((_, i) => (
           <div 
             key={i}
@@ -142,13 +142,13 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
         ))}
       </div>
 
-      <h2 className="text-2xl font-bold text-white/60 uppercase tracking-widest mb-4 z-10">
+      <h2 className="text-2xl landscape:text-lg font-bold text-white/60 uppercase tracking-widest mb-4 landscape:mb-2 z-10">
         {name}
       </h2>
       
       <span 
         className={cn(
-          "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[7rem] landscape:md:text-[12rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity"
+          "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[6rem] landscape:md:text-[10rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity"
         )}
       >
         {score}
@@ -187,9 +187,9 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
           )} />
           <button 
             onClick={toggleTimer}
-            className="bg-slate-900 px-6 py-3 rounded-2xl border border-white/20 shadow-2xl backdrop-blur-md active:scale-95 transition-transform cursor-pointer"
+            className="bg-slate-900 px-6 py-3 landscape:px-4 landscape:py-2 rounded-2xl border border-white/20 shadow-2xl backdrop-blur-md active:scale-95 transition-transform cursor-pointer"
           >
-            <span className="text-3xl md:text-4xl font-mono font-black text-orange-500 tabular-nums">
+            <span className="text-3xl md:text-4xl landscape:text-2xl font-mono font-black text-orange-500 tabular-nums">
               {formatTime(seconds)}
             </span>
           </button>
@@ -201,7 +201,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
       {/* Controls Bar */}
       <div className={cn(
         "bg-slate-900/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-center gap-4 md:gap-8 px-6 z-30 transition-all",
-        "portrait:h-24 landscape:h-16"
+        "portrait:h-24 landscape:h-20"
       )}>
         <button 
           onClick={undoPoint}
