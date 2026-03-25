@@ -30,31 +30,42 @@ export async function dbCheckGroupExists(groupId: string) {
 export async function dbCreateGroup(groupId: string, password: string) {
   if (!isSupabaseConfigured) return { success: true }; // Local mode
   
-  const exists = await dbCheckGroupExists(groupId);
-  if (exists) return { success: false, message: 'Nome de turma indisponível.' };
+  try {
+    const exists = await dbCheckGroupExists(groupId);
+    if (exists) return { success: false, message: 'Nome de turma indisponível.' };
 
-  const { error } = await supabase
-    .from('settings')
-    .insert({ 
-      group_id: groupId, 
-      password: password,
-      data: {
-        points_per_set: 25,
-        max_sets: 3,
-        team_a_name: 'Time A',
-        team_b_name: 'Time B',
-        team_a_color: '#3b82f6',
-        team_b_color: '#ef4444',
-        enable_sounds: true,
-        enable_voice: true
+    const { error } = await supabase
+      .from('settings')
+      .insert({ 
+        group_id: groupId, 
+        password: password,
+        data: {
+          points_per_set: 25,
+          max_sets: 3,
+          team_a_name: 'Time A',
+          team_b_name: 'Time B',
+          team_a_color: '#3b82f6',
+          team_b_color: '#ef4444',
+          enable_sounds: true,
+          enable_voice: true
+        }
+      });
+
+    if (error) {
+      console.error('Supabase: Error creating group:', error);
+      if (error.code === '42P01') {
+        return { success: false, message: 'Erro técnico: A tabela "settings" não foi encontrada no Supabase. Verifique o SQL Editor.' };
       }
-    });
-
-  if (error) {
-    console.error('Supabase: Error creating group:', error);
-    return { success: false, message: 'Erro ao criar turma.' };
+      if (error.code === '42703') {
+        return { success: false, message: 'Erro técnico: A coluna "password" não existe na tabela "settings". Execute o comando ALTER TABLE.' };
+      }
+      return { success: false, message: `Erro ao criar turma: ${error.message}` };
+    }
+    return { success: true };
+  } catch (e: any) {
+    console.error('Supabase: Unexpected error in dbCreateGroup:', e);
+    return { success: false, message: 'Erro inesperado ao conectar com o banco de dados.' };
   }
-  return { success: true };
 }
 
 export async function dbVerifyGroup(groupId: string, password: string) {
