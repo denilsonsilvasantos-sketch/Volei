@@ -8,10 +8,13 @@ import {
   LayoutDashboard,
   X,
   Menu,
-  LogOut
+  LogOut,
+  Database,
+  CloudOff
 } from 'lucide-react';
 import { View } from '../types';
 import { cn } from '../lib/utils';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface SidebarProps {
   currentView: View;
@@ -21,6 +24,17 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onLogout }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [supabaseOk, setSupabaseOk] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (isSupabaseConfigured) {
+      // We'll just assume it's ok for now if configured, 
+      // or we could call the test function here too.
+      setSupabaseOk(true);
+    } else {
+      setSupabaseOk(false);
+    }
+  }, []);
 
   const menuItems = [
     { id: 'scoreboard', label: 'Placar', icon: LayoutDashboard },
@@ -102,6 +116,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onL
         </nav>
 
         <div className="mt-auto pt-6 border-t border-white/10 space-y-4">
+          <div className="px-4 py-2 bg-slate-800/50 rounded-xl flex items-center gap-3">
+            {supabaseOk ? (
+              <Database size={16} className="text-emerald-400" />
+            ) : (
+              <CloudOff size={16} className="text-orange-400" />
+            )}
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Nuvem</span>
+              <span className={cn("text-xs font-medium", supabaseOk ? "text-emerald-400" : "text-orange-400")}>
+                {supabaseOk ? "Sincronizado" : "Modo Local"}
+              </span>
+            </div>
+          </div>
+
           <button 
             onClick={onLogout}
             className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all duration-200"

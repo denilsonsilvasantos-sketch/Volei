@@ -1,45 +1,75 @@
 import { useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { supabase } from '../lib/supabase';
 
 export function useSync(groupId: string | null, state: any, onSync: (state: any) => void) {
-  const socketRef = useRef<Socket | null>(null);
   const isRemoteUpdate = useRef(false);
   const hasSynced = useRef(false);
 
   useEffect(() => {
     if (!groupId) return;
 
-    // Connect to the same origin
-    const socket = io();
-    socketRef.current = socket;
+    const fetchInitialState = async () => {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('score_state')
+        .eq('id', groupId)
+        .single();
 
-    socket.emit('join-group', groupId);
-
-    socket.on('sync-state', (newState: any) => {
-      isRemoteUpdate.current = true;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching initial state:', error);
+      } else if (data?.score_state) {
+        isRemoteUpdate.current = true;
+        onSync(data.score_state);
+        setTimeout(() => {
+          isRemoteUpdate.current = false;
+        }, 100);
+      }
       hasSynced.current = true;
-      onSync(newState);
-      // Reset after a short delay to allow state to settle
-      setTimeout(() => {
-        isRemoteUpdate.current = false;
-      }, 100);
-    });
+    };
 
-    // If no sync received after 1s, assume we are the first and can start syncing
-    const timeout = setTimeout(() => {
-      hasSynced.current = true;
-    }, 1000);
+    fetchInitialState();
+
+    const channel = supabase
+      .channel(`group-${groupId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'groups',
+          filter: `id=eq.${groupId}`,
+        },
+        (payload) => {
+          if (payload.new.score_state) {
+            isRemoteUpdate.current = true;
+            onSync(payload.new.score_state);
+            setTimeout(() => {
+              isRemoteUpdate.current = false;
+            }, 100);
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
-      socket.disconnect();
-      clearTimeout(timeout);
+      supabase.removeChannel(channel);
     };
   }, [groupId]);
 
   useEffect(() => {
-    if (!groupId || !socketRef.current || isRemoteUpdate.current || !hasSynced.current) return;
+    if (!groupId || isRemoteUpdate.current || !hasSynced.current) return;
 
-    // Emit local changes to the group
-    socketRef.current.emit('update-state', { groupId, state });
+    const updateState = async () => {
+      const { error } = await supabase
+        .from('groups')
+        .upsert({ id: groupId, score_state: state }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Error updating state:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(updateState, 500);
+    return () => clearTimeout(timeoutId);
   }, [state, groupId]);
 }

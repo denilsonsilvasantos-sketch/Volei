@@ -11,40 +11,63 @@ export function useHistory(groupId: string | null) {
   const hasSynced = useRef(false);
 
   useEffect(() => {
+    console.log('useHistory: Initializing for groupId:', groupId);
     if (groupId) {
-      const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
-      const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
-      setMatches(localMatches);
-      setDraws(localDraws);
+      try {
+        const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
+        const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
+        setMatches(localMatches);
+        setDraws(localDraws);
+        console.log('useHistory: Loaded from localStorage');
+      } catch (e) {
+        console.error('useHistory: Error parsing from localStorage:', e);
+      }
 
-      const socket = io();
-      socketRef.current = socket;
-      socket.emit('join-group', groupId + '_history');
-      
-      socket.on('sync-state', (newState: { matches: Match[], draws: Draw[] }) => {
-        isRemoteUpdate.current = true;
+      try {
+        const socket = io();
+        socketRef.current = socket;
+        socket.emit('join-group', groupId + '_history');
+        
+        socket.on('sync-state', (newState: { matches: Match[], draws: Draw[] }) => {
+          console.log('useHistory: Received sync-state:', newState);
+          isRemoteUpdate.current = true;
+          hasSynced.current = true;
+          if (newState.matches) {
+            setMatches(newState.matches);
+            try {
+              localStorage.setItem('voley_matches_' + groupId, JSON.stringify(newState.matches));
+            } catch (e) {
+              console.error('useHistory: Error saving matches to localStorage:', e);
+            }
+          }
+          if (newState.draws) {
+            setDraws(newState.draws);
+            try {
+              localStorage.setItem('voley_draws_' + groupId, JSON.stringify(newState.draws));
+            } catch (e) {
+              console.error('useHistory: Error saving draws to localStorage:', e);
+            }
+          }
+          setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+        });
+
+        const timeout = setTimeout(() => {
+          console.log('useHistory: Sync timeout reached');
+          hasSynced.current = true;
+        }, 1000);
+
+        return () => { 
+          console.log('useHistory: Disconnecting socket');
+          socket.disconnect(); 
+          clearTimeout(timeout);
+        };
+      } catch (e) {
+        console.error('useHistory: Error initializing socket:', e);
         hasSynced.current = true;
-        if (newState.matches) {
-          setMatches(newState.matches);
-          localStorage.setItem('voley_matches_' + groupId, JSON.stringify(newState.matches));
-        }
-        if (newState.draws) {
-          setDraws(newState.draws);
-          localStorage.setItem('voley_draws_' + groupId, JSON.stringify(newState.draws));
-        }
-        setTimeout(() => { isRemoteUpdate.current = false; }, 100);
-      });
-
-      const timeout = setTimeout(() => {
-        hasSynced.current = true;
-      }, 1000);
-
-      return () => { 
-        socket.disconnect(); 
-        clearTimeout(timeout);
-      };
+      }
     }
     setLoading(false);
+    console.log('useHistory: Loading set to false');
   }, [groupId]);
 
   useEffect(() => {
@@ -58,13 +81,25 @@ export function useHistory(groupId: string | null) {
   const addMatch = (match: Match) => {
     const updated = [match, ...matches];
     setMatches(updated);
-    if (groupId) localStorage.setItem('voley_matches_' + groupId, JSON.stringify(updated));
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_matches_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving matches to localStorage:', e);
+      }
+    }
   };
 
   const addDraw = (draw: Draw) => {
     const updated = [draw, ...draws];
     setDraws(updated);
-    if (groupId) localStorage.setItem('voley_draws_' + groupId, JSON.stringify(updated));
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_draws_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving draws to localStorage:', e);
+      }
+    }
   };
 
   return { matches, draws, addMatch, addDraw, loading };

@@ -10,28 +10,41 @@ export function usePlayers(groupId: string | null) {
   const hasSynced = useRef(false);
 
   useEffect(() => {
+    console.log('usePlayers: Initializing for groupId:', groupId);
     fetchPlayers();
 
     if (groupId) {
-      const socket = io();
-      socketRef.current = socket;
-      socket.emit('join-group', groupId + '_players');
-      socket.on('sync-state', (newState: Player[]) => {
-        isRemoteUpdate.current = true;
-        hasSynced.current = true;
-        setPlayers(newState);
-        localStorage.setItem('voley_players_' + groupId, JSON.stringify(newState));
-        setTimeout(() => { isRemoteUpdate.current = false; }, 100);
-      });
+      try {
+        const socket = io();
+        socketRef.current = socket;
+        socket.emit('join-group', groupId + '_players');
+        socket.on('sync-state', (newState: Player[]) => {
+          console.log('usePlayers: Received sync-state:', newState);
+          isRemoteUpdate.current = true;
+          hasSynced.current = true;
+          setPlayers(newState);
+          try {
+            localStorage.setItem('voley_players_' + groupId, JSON.stringify(newState));
+          } catch (e) {
+            console.error('usePlayers: Error saving to localStorage:', e);
+          }
+          setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+        });
 
-      const timeout = setTimeout(() => {
-        hasSynced.current = true;
-      }, 1000);
+        const timeout = setTimeout(() => {
+          console.log('usePlayers: Sync timeout reached');
+          hasSynced.current = true;
+        }, 1000);
 
-      return () => { 
-        socket.disconnect(); 
-        clearTimeout(timeout);
-      };
+        return () => { 
+          console.log('usePlayers: Disconnecting socket');
+          socket.disconnect(); 
+          clearTimeout(timeout);
+        };
+      } catch (e) {
+        console.error('usePlayers: Error initializing socket:', e);
+        hasSynced.current = true; // Allow local mode if socket fails
+      }
     }
   }, [groupId]);
 
@@ -41,29 +54,57 @@ export function usePlayers(groupId: string | null) {
   }, [players, groupId]);
 
   async function fetchPlayers() {
+    console.log('usePlayers: Fetching players...');
     if (groupId) {
-      const local = localStorage.getItem('voley_players_' + groupId);
-      if (local) setPlayers(JSON.parse(local));
+      try {
+        const local = localStorage.getItem('voley_players_' + groupId);
+        if (local) {
+          const parsed = JSON.parse(local);
+          setPlayers(parsed);
+          console.log('usePlayers: Loaded from localStorage:', parsed);
+        }
+      } catch (e) {
+        console.error('usePlayers: Error parsing from localStorage:', e);
+      }
     }
     setLoading(false);
+    console.log('usePlayers: Loading set to false');
   }
 
   const addPlayer = async (name: string) => {
     const updated = [...players, { name, active: true, id: crypto.randomUUID() }];
     setPlayers(updated);
-    if (groupId) localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving players to localStorage:', e);
+      }
+    }
   };
 
   const togglePlayerActive = async (id: string) => {
     const updated = players.map(p => p.id === id ? { ...p, active: !p.active } : p);
     setPlayers(updated);
-    if (groupId) localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving players to localStorage:', e);
+      }
+    }
   };
 
   const deletePlayer = async (id: string) => {
     const updated = players.filter(p => p.id !== id);
     setPlayers(updated);
-    if (groupId) localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving players to localStorage:', e);
+      }
+    }
   };
 
   return { players, addPlayer, togglePlayerActive, deletePlayer, loading };

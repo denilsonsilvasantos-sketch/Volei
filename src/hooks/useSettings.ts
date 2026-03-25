@@ -21,28 +21,41 @@ export function useSettings(groupId: string | null) {
   const hasSynced = useRef(false);
 
   useEffect(() => {
+    console.log('useSettings: Initializing for groupId:', groupId);
     fetchSettings();
 
     if (groupId) {
-      const socket = io();
-      socketRef.current = socket;
-      socket.emit('join-group', groupId + '_settings');
-      socket.on('sync-state', (newState: Settings) => {
-        isRemoteUpdate.current = true;
-        hasSynced.current = true;
-        setSettings(newState);
-        localStorage.setItem('voley_settings_' + groupId, JSON.stringify(newState));
-        setTimeout(() => { isRemoteUpdate.current = false; }, 100);
-      });
+      try {
+        const socket = io();
+        socketRef.current = socket;
+        socket.emit('join-group', groupId + '_settings');
+        socket.on('sync-state', (newState: Settings) => {
+          console.log('useSettings: Received sync-state:', newState);
+          isRemoteUpdate.current = true;
+          hasSynced.current = true;
+          setSettings(newState);
+          try {
+            localStorage.setItem('voley_settings_' + groupId, JSON.stringify(newState));
+          } catch (e) {
+            console.error('useSettings: Error saving to localStorage:', e);
+          }
+          setTimeout(() => { isRemoteUpdate.current = false; }, 100);
+        });
 
-      const timeout = setTimeout(() => {
-        hasSynced.current = true;
-      }, 1000);
+        const timeout = setTimeout(() => {
+          console.log('useSettings: Sync timeout reached');
+          hasSynced.current = true;
+        }, 1000);
 
-      return () => { 
-        socket.disconnect(); 
-        clearTimeout(timeout);
-      };
+        return () => { 
+          console.log('useSettings: Disconnecting socket');
+          socket.disconnect(); 
+          clearTimeout(timeout);
+        };
+      } catch (e) {
+        console.error('useSettings: Error initializing socket:', e);
+        hasSynced.current = true; // Allow local mode if socket fails
+      }
     }
   }, [groupId]);
 
@@ -52,17 +65,33 @@ export function useSettings(groupId: string | null) {
   }, [settings, groupId]);
 
   async function fetchSettings() {
+    console.log('useSettings: Fetching settings...');
     if (groupId) {
-      const local = localStorage.getItem('voley_settings_' + groupId);
-      if (local) setSettings(JSON.parse(local));
+      try {
+        const local = localStorage.getItem('voley_settings_' + groupId);
+        if (local) {
+          const parsed = JSON.parse(local);
+          setSettings(parsed);
+          console.log('useSettings: Loaded from localStorage:', parsed);
+        }
+      } catch (e) {
+        console.error('useSettings: Error parsing from localStorage:', e);
+      }
     }
     setLoading(false);
+    console.log('useSettings: Loading set to false');
   }
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
-    if (groupId) localStorage.setItem('voley_settings_' + groupId, JSON.stringify(updated));
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_settings_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving settings to localStorage:', e);
+      }
+    }
   };
 
   return { settings, updateSettings, loading };
