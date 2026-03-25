@@ -29,7 +29,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ groupId }) => {
   if (loading) return <div className="p-10 text-center text-white">Carregando...</div>;
 
   return (
-    <div className="p-6 pt-20 md:pt-6 max-w-5xl mx-auto space-y-12">
+    <div className="h-full overflow-y-auto p-6 pt-20 md:pt-6 max-w-5xl mx-auto space-y-12">
       <header className="text-center">
         <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Histórico</h1>
         <p className="text-slate-400 max-w-md mx-auto">Acompanhe suas partidas e sorteios anteriores realizados no app.</p>

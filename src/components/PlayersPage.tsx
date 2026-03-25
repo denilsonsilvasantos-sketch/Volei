@@ -27,7 +27,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({ players, onAdd, onTogg
   };
 
   return (
-    <div className="p-6 pt-20 md:pt-6 max-w-4xl mx-auto">
+    <div className="h-full overflow-y-auto p-6 pt-20 md:pt-6 max-w-4xl mx-auto">
       <header className="mb-10 text-center flex flex-col items-center gap-6">
         <div>
           <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Jogadores</h1>

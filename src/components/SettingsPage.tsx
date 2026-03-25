@@ -22,7 +22,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate }
   };
 
   return (
-    <div className="p-6 pt-20 md:pt-6 max-w-2xl mx-auto">
+    <div className="h-full overflow-y-auto p-6 pt-20 md:pt-6 max-w-2xl mx-auto">
       <header className="mb-10 text-center">
         <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Configurações</h1>
         <p className="text-slate-400 max-w-md mx-auto">Personalize as regras e o visual da sua partida de vôlei.</p>

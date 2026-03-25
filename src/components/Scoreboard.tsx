@@ -155,7 +155,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
           scale: 1
         }}
         className={cn(
-          "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[10rem] landscape:md:text-[16rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity"
+          "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[7rem] landscape:md:text-[12rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity"
         )}
       >
         {score}
@@ -177,7 +177,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
       
       {/* Main Score Area */}
       <div className={cn(
-        "flex-1 flex transition-all duration-700",
+        "flex-1 min-h-0 flex transition-all duration-700",
         isSwapped ? "flex-row-reverse" : "flex-row",
         "portrait:flex-col landscape:flex-row"
       )}>

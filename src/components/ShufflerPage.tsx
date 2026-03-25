@@ -77,7 +77,7 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId }) 
   };
 
   return (
-    <div className="p-6 pt-20 md:pt-6 max-w-5xl mx-auto">
+    <div className="h-full overflow-y-auto p-6 pt-20 md:pt-6 max-w-5xl mx-auto">
       <header className="mb-10 text-center">
         <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Sorteador Inteligente</h1>
         <p className="text-slate-400 max-w-md mx-auto">Organize os times de forma equilibrada e diversa para sua partida.</p>
