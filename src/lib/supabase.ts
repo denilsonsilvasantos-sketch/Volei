@@ -15,6 +15,179 @@ export const supabase = createClient(
 // Helper to check if Supabase is actually configured
 export const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
 
+// --- Groups / Auth ---
+export async function dbCheckGroupExists(groupId: string) {
+  if (!isSupabaseConfigured) return false;
+  const { data, error } = await supabase
+    .from('settings')
+    .select('group_id')
+    .eq('group_id', groupId)
+    .maybeSingle();
+  if (error) console.error('Supabase: Error checking group:', error);
+  return !!data;
+}
+
+export async function dbCreateGroup(groupId: string, password: string) {
+  if (!isSupabaseConfigured) return { success: true }; // Local mode
+  
+  const exists = await dbCheckGroupExists(groupId);
+  if (exists) return { success: false, message: 'Nome de turma indisponível.' };
+
+  const { error } = await supabase
+    .from('settings')
+    .insert({ 
+      group_id: groupId, 
+      password: password,
+      data: {
+        points_per_set: 25,
+        max_sets: 3,
+        team_a_name: 'Time A',
+        team_b_name: 'Time B',
+        team_a_color: '#3b82f6',
+        team_b_color: '#ef4444',
+        enable_sounds: true,
+        enable_voice: true
+      }
+    });
+
+  if (error) {
+    console.error('Supabase: Error creating group:', error);
+    return { success: false, message: 'Erro ao criar turma.' };
+  }
+  return { success: true };
+}
+
+export async function dbVerifyGroup(groupId: string, password: string) {
+  if (!isSupabaseConfigured) return { success: true }; // Local mode
+
+  const { data, error } = await supabase
+    .from('settings')
+    .select('password')
+    .eq('group_id', groupId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Supabase: Error verifying group:', error);
+    return { success: false, message: 'Erro ao verificar turma.' };
+  }
+
+  if (!data) return { success: false, message: 'Turma não encontrada.' };
+  if (data.password !== password) return { success: false, message: 'Senha incorreta.' };
+
+  return { success: true };
+}
+
+// --- Settings ---
+export async function dbSaveSettings(groupId: string, data: any) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from('settings')
+    .upsert({ group_id: groupId, data, updated_at: new Date().toISOString() });
+  if (error) console.error('Supabase: Error saving settings:', error);
+}
+
+export async function dbFetchSettings(groupId: string) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from('settings')
+    .select('data')
+    .eq('group_id', groupId)
+    .single();
+  if (error && error.code !== 'PGRST116') console.error('Supabase: Error fetching settings:', error);
+  return data?.data || null;
+}
+
+// --- Players ---
+export async function dbSavePlayers(groupId: string, players: any[]) {
+  if (!isSupabaseConfigured) return;
+  // For simplicity in this demo, we'll replace all players for the group
+  // In a real app, you'd sync individual records
+  const { error: deleteError } = await supabase
+    .from('players')
+    .delete()
+    .eq('group_id', groupId);
+  
+  if (deleteError) {
+    console.error('Supabase: Error clearing players:', deleteError);
+    return;
+  }
+
+  const playersToInsert = players.map(p => ({
+    id: p.id,
+    group_id: groupId,
+    name: p.name,
+    active: p.active
+  }));
+
+  const { error } = await supabase
+    .from('players')
+    .insert(playersToInsert);
+  if (error) console.error('Supabase: Error saving players:', error);
+}
+
+export async function dbFetchPlayers(groupId: string) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('group_id', groupId);
+  if (error) console.error('Supabase: Error fetching players:', error);
+  return data || null;
+}
+
+// --- Matches ---
+export async function dbSaveMatch(groupId: string, match: any) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from('matches')
+    .insert({
+      id: match.id,
+      group_id: groupId,
+      team_a_score: match.team_a_score,
+      team_b_score: match.team_b_score,
+      sets_a: match.sets_a,
+      sets_b: match.sets_b,
+      created_at: match.created_at
+    });
+  if (error) console.error('Supabase: Error saving match:', error);
+}
+
+export async function dbFetchMatches(groupId: string) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false });
+  if (error) console.error('Supabase: Error fetching matches:', error);
+  return data || null;
+}
+
+// --- Draws ---
+export async function dbSaveDraw(groupId: string, draw: any) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from('draws')
+    .insert({
+      id: draw.id,
+      group_id: groupId,
+      teams: draw.teams,
+      created_at: draw.created_at
+    });
+  if (error) console.error('Supabase: Error saving draw:', error);
+}
+
+export async function dbFetchDraws(groupId: string) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from('draws')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false });
+  if (error) console.error('Supabase: Error fetching draws:', error);
+  return data || null;
+}
+
 export async function testSupabaseConnection() {
   if (!isSupabaseConfigured) {
     return { success: false, message: 'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.' };

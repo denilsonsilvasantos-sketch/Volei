@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Settings } from '../types';
 import { io, Socket } from 'socket.io-client';
+import { dbSaveSettings, dbFetchSettings } from '../lib/supabase';
 
 const DEFAULT_SETTINGS: Settings = {
   points_per_set: 25,
@@ -67,6 +68,7 @@ export function useSettings(groupId: string | null) {
   async function fetchSettings() {
     console.log('useSettings: Fetching settings...');
     if (groupId) {
+      // 1. Load from localStorage first (Offline-First)
       try {
         const local = localStorage.getItem('voley_settings_' + groupId);
         if (local) {
@@ -77,6 +79,18 @@ export function useSettings(groupId: string | null) {
       } catch (e) {
         console.error('useSettings: Error parsing from localStorage:', e);
       }
+
+      // 2. Load from Supabase (Background sync)
+      try {
+        const dbData = await dbFetchSettings(groupId);
+        if (dbData) {
+          setSettings(dbData);
+          localStorage.setItem('voley_settings_' + groupId, JSON.stringify(dbData));
+          console.log('useSettings: Loaded from Supabase:', dbData);
+        }
+      } catch (e) {
+        console.error('useSettings: Error fetching from Supabase:', e);
+      }
     }
     setLoading(false);
     console.log('useSettings: Loading set to false');
@@ -86,11 +100,14 @@ export function useSettings(groupId: string | null) {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     if (groupId) {
+      // Save locally
       try {
         localStorage.setItem('voley_settings_' + groupId, JSON.stringify(updated));
       } catch (e) {
-        console.error('Error saving settings to localStorage:', e);
+        console.error('useSettings: Error saving to localStorage:', e);
       }
+      // Save to Supabase (Background)
+      dbSaveSettings(groupId, updated);
     }
   };
 

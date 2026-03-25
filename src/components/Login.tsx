@@ -1,77 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Users, LogIn, Shield, LogOut } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { User } from '@supabase/supabase-js';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Users, LogIn, Shield, Lock, PlusCircle, Loader2 } from 'lucide-react';
+import { dbCreateGroup, dbVerifyGroup } from '../lib/supabase';
 
 interface LoginProps {
   onJoin: (groupId: string) => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ onJoin }) => {
+  const [mode, setMode] = useState<'login' | 'create'>('login');
   const [groupId, setGroupId] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleGoogleSignIn = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-      if (error) throw error;
-    } catch (err) {
-      setError('Erro ao entrar com Google. Tente novamente.');
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error("Error signing out:", err);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      setError('Você precisa estar logado com o Google primeiro.');
-      return;
-    }
+    setError('');
+    
     if (groupId.trim().length < 3) {
       setError('O nome da turma deve ter pelo menos 3 caracteres.');
       return;
     }
-    onJoin(groupId.trim().toLowerCase());
-  };
+    if (password.trim().length < 3) {
+      setError('A senha deve ter pelo menos 3 caracteres.');
+      return;
+    }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+    setLoading(true);
+    const cleanGroupId = groupId.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    try {
+      if (mode === 'create') {
+        const result = await dbCreateGroup(cleanGroupId, cleanPassword);
+        if (!result.success) {
+          setError(result.message || 'Erro ao criar turma.');
+          setLoading(false);
+          return;
+        }
+      } else {
+        const result = await dbVerifyGroup(cleanGroupId, cleanPassword);
+        if (!result.success) {
+          setError(result.message || 'Erro ao entrar na turma.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      onJoin(cleanGroupId);
+    } catch (e) {
+      console.error('Login error:', e);
+      setError('Ocorreu um erro inesperado.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-950">
@@ -85,39 +69,32 @@ export const Login: React.FC<LoginProps> = ({ onJoin }) => {
             <Users size={40} className="text-white" />
           </div>
           <h1 className="text-3xl font-black text-white mb-2">Vôlei Pro</h1>
-          <p className="text-slate-400">Entre no nome da sua turma para sincronizar o placar e sorteios.</p>
+          <p className="text-slate-400">
+            {mode === 'login' 
+              ? 'Entre no nome da sua turma para sincronizar o placar.' 
+              : 'Crie um nome único e uma senha para sua turma.'}
+          </p>
         </div>
 
-        {!user ? (
-          <div className="space-y-4">
-            <button 
-              onClick={handleGoogleSignIn}
-              className="w-full bg-white text-slate-900 font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-[0.98]"
-            >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-              Entrar com Google
-            </button>
-            <p className="text-xs text-slate-500 text-center">
-              O login com Google é necessário para manter seus dados seguros e sincronizados entre dispositivos.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex items-center justify-between px-2 mb-2">
-              <div className="flex items-center gap-2">
-                <img src={user.user_metadata.avatar_url || ''} alt={user.user_metadata.full_name || ''} className="w-8 h-8 rounded-full border border-white/10" />
-                <span className="text-sm text-white font-medium truncate max-w-[150px]">{user.user_metadata.full_name}</span>
-              </div>
-              <button 
-                type="button"
-                onClick={handleLogout}
-                className="text-xs text-slate-500 hover:text-red-400 flex items-center gap-1 transition-colors"
-              >
-                <LogOut size={14} />
-                Sair
-              </button>
-            </div>
+        <div className="flex p-1 bg-slate-800 rounded-2xl mb-8">
+          <button 
+            onClick={() => { setMode('login'); setError(''); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${mode === 'login' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+          >
+            <LogIn size={18} />
+            Entrar
+          </button>
+          <button 
+            onClick={() => { setMode('create'); setError(''); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${mode === 'create' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+          >
+            <PlusCircle size={18} />
+            Criar Turma
+          </button>
+        </div>
 
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-400 ml-1">Nome da Turma</label>
               <div className="relative">
@@ -131,24 +108,62 @@ export const Login: React.FC<LoginProps> = ({ onJoin }) => {
                     setError('');
                   }}
                   className="w-full bg-slate-800 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                  required
                 />
               </div>
-              {error && <p className="text-red-500 text-xs ml-1">{error}</p>}
             </div>
 
-            <button 
-              type="submit"
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-            >
-              <LogIn size={20} />
-              Entrar na Turma
-            </button>
-          </form>
-        )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-400 ml-1">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                <input 
+                  type="password"
+                  placeholder="Mínimo 3 caracteres"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError('');
+                  }}
+                  className="w-full bg-slate-800 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                  required
+                />
+              </div>
+            </div>
+            
+            <AnimatePresence>
+              {error && (
+                <motion.p 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-red-500 text-sm ml-1 font-medium"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-slate-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              mode === 'login' ? <LogIn size={20} /> : <PlusCircle size={20} />
+            )}
+            {mode === 'login' ? 'Entrar na Turma' : 'Criar e Entrar'}
+          </button>
+        </form>
 
         <div className="mt-8 pt-6 border-t border-white/5 text-center">
           <p className="text-xs text-slate-500">
-            Dica: Use o mesmo nome para que todos da sua turma vejam os mesmos dados em tempo real.
+            {mode === 'login' 
+              ? 'Dica: Use o mesmo nome e senha para que todos da sua turma vejam os mesmos dados.'
+              : 'Importante: Guarde sua senha! Ela será necessária para que outros jogadores entrem nesta turma.'}
           </p>
         </div>
       </motion.div>

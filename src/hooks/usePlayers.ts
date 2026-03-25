@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Player } from '../types';
 import { io, Socket } from 'socket.io-client';
+import { dbSavePlayers, dbFetchPlayers } from '../lib/supabase';
 
 export function usePlayers(groupId: string | null) {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -56,6 +57,7 @@ export function usePlayers(groupId: string | null) {
   async function fetchPlayers() {
     console.log('usePlayers: Fetching players...');
     if (groupId) {
+      // 1. Load from localStorage first (Offline-First)
       try {
         const local = localStorage.getItem('voley_players_' + groupId);
         if (local) {
@@ -65,6 +67,24 @@ export function usePlayers(groupId: string | null) {
         }
       } catch (e) {
         console.error('usePlayers: Error parsing from localStorage:', e);
+      }
+
+      // 2. Load from Supabase (Background sync)
+      try {
+        const dbData = await dbFetchPlayers(groupId);
+        if (dbData && dbData.length > 0) {
+          // Map database fields back to Player type
+          const mappedPlayers: Player[] = dbData.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            active: p.active
+          }));
+          setPlayers(mappedPlayers);
+          localStorage.setItem('voley_players_' + groupId, JSON.stringify(mappedPlayers));
+          console.log('usePlayers: Loaded from Supabase:', mappedPlayers);
+        }
+      } catch (e) {
+        console.error('usePlayers: Error fetching from Supabase:', e);
       }
     }
     setLoading(false);
@@ -78,8 +98,9 @@ export function usePlayers(groupId: string | null) {
       try {
         localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
       } catch (e) {
-        console.error('Error saving players to localStorage:', e);
+        console.error('usePlayers: Error saving to localStorage:', e);
       }
+      dbSavePlayers(groupId, updated);
     }
   };
 
@@ -90,8 +111,9 @@ export function usePlayers(groupId: string | null) {
       try {
         localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
       } catch (e) {
-        console.error('Error saving players to localStorage:', e);
+        console.error('usePlayers: Error saving to localStorage:', e);
       }
+      dbSavePlayers(groupId, updated);
     }
   };
 
@@ -102,8 +124,9 @@ export function usePlayers(groupId: string | null) {
       try {
         localStorage.setItem('voley_players_' + groupId, JSON.stringify(updated));
       } catch (e) {
-        console.error('Error saving players to localStorage:', e);
+        console.error('usePlayers: Error saving to localStorage:', e);
       }
+      dbSavePlayers(groupId, updated);
     }
   };
 

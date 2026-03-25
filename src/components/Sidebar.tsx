@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { View } from '../types';
 import { cn } from '../lib/utils';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, testSupabaseConnection } from '../lib/supabase';
 
 interface SidebarProps {
   currentView: View;
