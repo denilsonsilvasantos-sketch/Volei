@@ -22,13 +22,13 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: 'https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&q=80&w=192&h=192',
+              src: 'https://images.unsplash.com/photo-1612872086822-4421f172c52c?auto=format&fit=crop&q=80&w=192&h=192',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any maskable'
             },
             {
-              src: 'https://images.unsplash.com/photo-1592656094267-764a45160876?auto=format&fit=crop&q=80&w=512&h=512',
+              src: 'https://images.unsplash.com/photo-1612872086822-4421f172c52c?auto=format&fit=crop&q=80&w=512&h=512',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'

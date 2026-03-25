@@ -152,18 +152,10 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
         animate={{ 
           y: 0, 
           opacity: 1,
-          scale: isActive ? [1, 1.02, 1] : 1
-        }}
-        transition={{
-          scale: {
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }
+          scale: 1
         }}
         className={cn(
-          "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[10rem] landscape:md:text-[16rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity",
-          isActive && "animate-pulse"
+          "text-[10rem] sm:text-[12rem] md:text-[18rem] landscape:text-[10rem] landscape:md:text-[16rem] font-black text-white leading-none z-10 drop-shadow-2xl transition-opacity"
         )}
       >
         {score}
