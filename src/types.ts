@@ -22,6 +22,8 @@ export interface Settings {
   team_b_color: string;
   team_a_name: string;
   team_b_name: string;
+  enable_sounds: boolean;
+  enable_voice: boolean;
 }
 
 export interface Draw {

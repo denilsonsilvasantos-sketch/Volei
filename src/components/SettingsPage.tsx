@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Settings as SettingsType } from '../types';
-import { Save, Palette } from 'lucide-react';
+import { Save, Palette, Volume2, Mic } from 'lucide-react';
 
 interface SettingsPageProps {
   settings: SettingsType;
@@ -109,6 +109,47 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate }
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="bg-slate-900/50 border border-white/10 rounded-3xl p-6 space-y-6">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <Volume2 size={20} className="text-orange-500" />
+            Sons e Voz
+          </h2>
+
+          <div className="space-y-4">
+            <label className="flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-white/5 cursor-pointer hover:bg-slate-800 transition-colors">
+              <div className="flex items-center gap-3">
+                <Volume2 size={20} className="text-slate-400" />
+                <div>
+                  <p className="font-medium text-white">Efeitos Sonoros</p>
+                  <p className="text-xs text-slate-500">Apito e bips durante a partida</p>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={formData.enable_sounds}
+                onChange={e => setFormData({ ...formData, enable_sounds: e.target.checked })}
+                className="w-6 h-6 accent-orange-500 rounded-lg"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-white/5 cursor-pointer hover:bg-slate-800 transition-colors">
+              <div className="flex items-center gap-3">
+                <Mic size={20} className="text-slate-400" />
+                <div>
+                  <p className="font-medium text-white">Anunciar Placar</p>
+                  <p className="text-xs text-slate-500">Voz anunciando cada ponto marcado</p>
+                </div>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={formData.enable_voice}
+                onChange={e => setFormData({ ...formData, enable_voice: e.target.checked })}
+                className="w-6 h-6 accent-orange-500 rounded-lg"
+              />
+            </label>
           </div>
         </section>
 

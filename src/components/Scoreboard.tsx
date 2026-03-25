@@ -23,6 +23,39 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
   
   const { seconds, isActive, toggleTimer, resetTimer, setSeconds, setIsActive } = useTimer();
 
+  // Audio helpers
+  const playSound = (type: 'beep' | 'whistle') => {
+    if (!settings.enable_sounds) return;
+    
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    if (type === 'beep') {
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    } else {
+      // Whistle sound (Mixkit)
+      const whistle = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+      whistle.volume = 0.3;
+      whistle.play().catch(e => console.log('Audio play failed:', e));
+    }
+  };
+
+  const speak = (text: string) => {
+    if (!settings.enable_voice) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 1.2;
+    window.speechSynthesis.speak(utterance);
+  };
+
   // Sync state with the group
   useSync(groupId, { scoreA, scoreB, setsA, setsB, isSwapped, seconds, isActive }, (newState) => {
     if (newState.scoreA !== undefined) setScoreA(newState.scoreA);
@@ -62,13 +95,18 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
   const addPoint = (team: 'A' | 'B') => {
     if (!isActive) toggleTimer();
     setHistory([...history, { a: scoreA, b: scoreB }]);
+    
     if (team === 'A') {
       const newScore = scoreA + 1;
       setScoreA(newScore);
+      playSound('beep');
+      speak(`${newScore} a ${scoreB}`);
       checkSetWinner(newScore, scoreB, 'A');
     } else {
       const newScore = scoreB + 1;
       setScoreB(newScore);
+      playSound('beep');
+      speak(`${scoreA} a ${newScore}`);
       checkSetWinner(scoreA, newScore, 'B');
     }
   };
@@ -78,12 +116,36 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ settings, groupId }) => 
     const diff = Math.abs(sA - sB);
 
     if ((sA >= target || sB >= target) && diff >= 2) {
+      playSound('whistle');
+      let gameEnded = false;
+      const setsToWin = Math.ceil(settings.max_sets / 2);
+
       if (lastScorer === 'A') {
-        setSetsA(prev => prev + 1);
+        const newSets = setsA + 1;
+        setSetsA(newSets);
+        if (newSets >= setsToWin) {
+          speak(`Fim de jogo! Vitória do ${settings.team_a_name}`);
+          gameEnded = true;
+        } else {
+          speak(`Fim de set para ${settings.team_a_name}`);
+        }
       } else {
-        setSetsB(prev => prev + 1);
+        const newSets = setsB + 1;
+        setSetsB(newSets);
+        if (newSets >= setsToWin) {
+          speak(`Fim de jogo! Vitória do ${settings.team_b_name}`);
+          gameEnded = true;
+        } else {
+          speak(`Fim de set para ${settings.team_b_name}`);
+        }
       }
-      resetSet();
+      
+      if (gameEnded) {
+        // Keep the score for a moment before reset or just stop
+        setIsActive(false);
+      } else {
+        resetSet();
+      }
     }
   };
 

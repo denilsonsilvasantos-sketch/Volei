@@ -9,6 +9,8 @@ const DEFAULT_SETTINGS: Settings = {
   team_b_color: '#ef4444', // red-500
   team_a_name: 'Time A',
   team_b_name: 'Time B',
+  enable_sounds: true,
+  enable_voice: true,
 };
 
 export function useSettings(groupId: string | null) {

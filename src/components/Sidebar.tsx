@@ -75,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, onL
           </button>
         </div>
 
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
