@@ -20,6 +20,7 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId, on
   const [newTempName, setNewTempName] = useState('');
   const [generatedTeams, setGeneratedTeams] = useState<string[][]>([]);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [showSavedToast, setShowSavedToast] = useState(false);
 
   // Initialize selected players from the main list (only those active)
   React.useEffect(() => {
@@ -107,10 +108,26 @@ export const ShufflerPage: React.FC<ShufflerPageProps> = ({ players, groupId, on
     };
 
     onSaveDraw(drawData);
+    setShowSavedToast(true);
+    setTimeout(() => setShowSavedToast(false), 3000);
   };
 
   return (
     <div className="h-full overflow-y-auto p-6 pt-20 md:pt-6 max-w-5xl mx-auto">
+      <AnimatePresence>
+        {showSavedToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl font-bold flex items-center gap-2"
+          >
+            <Save size={20} />
+            Sorteio salvo no histórico!
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <header className="mb-10 text-center">
         <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Sorteador Inteligente</h1>
         <p className="text-slate-400 max-w-md mx-auto">Organize os times de forma equilibrada e diversa para sua partida.</p>

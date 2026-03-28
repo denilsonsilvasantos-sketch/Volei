@@ -163,6 +163,15 @@ export async function dbSaveMatch(groupId: string, match: any) {
   if (error) console.error('Supabase: Error saving match:', error);
 }
 
+export async function dbDeleteMatch(id: string) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from('matches')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('Supabase: Error deleting match:', error);
+}
+
 export async function dbFetchMatches(groupId: string) {
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
@@ -186,6 +195,15 @@ export async function dbSaveDraw(groupId: string, draw: any) {
       created_at: draw.created_at
     });
   if (error) console.error('Supabase: Error saving draw:', error);
+}
+
+export async function dbDeleteDraw(id: string) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from('draws')
+    .delete()
+    .eq('id', id);
+  if (error) console.error('Supabase: Error deleting draw:', error);
 }
 
 export async function dbFetchDraws(groupId: string) {

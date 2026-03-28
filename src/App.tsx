@@ -21,7 +21,7 @@ export default function App() {
 
   const { settings, updateSettings, loading: settingsLoading } = useSettings(groupId);
   const { players, addPlayer, togglePlayerActive, deletePlayer, loading: playersLoading } = usePlayers(groupId);
-  const { matches, draws, addMatch, addDraw, loading: historyLoading } = useHistory(groupId);
+  const { matches, draws, addMatch, addDraw, deleteMatch, deleteDraw, loading: historyLoading } = useHistory(groupId);
 
   useEffect(() => {
     console.log('App: Loading States - Settings:', settingsLoading, 'Players:', playersLoading, 'History:', historyLoading, 'ForceLoad:', forceLoad);
@@ -104,7 +104,7 @@ export default function App() {
       case 'shuffler':
         return <ShufflerPage players={players} groupId={groupId} onSaveDraw={addDraw} />;
       case 'history':
-        return <HistoryPage matches={matches} draws={draws} />;
+        return <HistoryPage matches={matches} draws={draws} onDeleteMatch={deleteMatch} onDeleteDraw={deleteDraw} />;
       default:
         return <Scoreboard settings={settings} groupId={groupId} onSaveMatch={addMatch} />;
     }

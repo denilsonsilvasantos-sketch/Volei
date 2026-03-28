@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Match, Draw } from '../types';
 import { io, Socket } from 'socket.io-client';
-import { dbSaveMatch, dbSaveDraw, dbFetchMatches, dbFetchDraws } from '../lib/supabase';
+import { dbSaveMatch, dbSaveDraw, dbFetchMatches, dbFetchDraws, dbDeleteMatch, dbDeleteDraw } from '../lib/supabase';
 
 export function useHistory(groupId: string | null) {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -119,6 +119,19 @@ export function useHistory(groupId: string | null) {
     }
   };
 
+  const deleteMatch = (id: string) => {
+    const updated = matches.filter(m => m.id !== id);
+    setMatches(updated);
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_matches_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('useHistory: Error saving matches to localStorage:', e);
+      }
+      dbDeleteMatch(id);
+    }
+  };
+
   const addDraw = (draw: Draw) => {
     const updated = [draw, ...draws];
     setDraws(updated);
@@ -132,5 +145,18 @@ export function useHistory(groupId: string | null) {
     }
   };
 
-  return { matches, draws, addMatch, addDraw, loading };
+  const deleteDraw = (id: string) => {
+    const updated = draws.filter(d => d.id !== id);
+    setDraws(updated);
+    if (groupId) {
+      try {
+        localStorage.setItem('voley_draws_' + groupId, JSON.stringify(updated));
+      } catch (e) {
+        console.error('useHistory: Error saving draws to localStorage:', e);
+      }
+      dbDeleteDraw(id);
+    }
+  };
+
+  return { matches, draws, addMatch, addDraw, deleteMatch, deleteDraw, loading };
 }

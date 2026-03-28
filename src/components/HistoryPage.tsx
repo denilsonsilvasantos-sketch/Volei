@@ -1,15 +1,17 @@
 import React from 'react';
 import { Match, Draw } from '../types';
-import { History as HistoryIcon, Trophy, Calendar } from 'lucide-react';
+import { History as HistoryIcon, Trophy, Calendar, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface HistoryPageProps {
   matches: Match[];
   draws: Draw[];
+  onDeleteMatch: (id: string) => void;
+  onDeleteDraw: (id: string) => void;
 }
 
-export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws }) => {
+export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws, onDeleteMatch, onDeleteDraw }) => {
   return (
     <div className="h-full overflow-y-auto p-6 pt-20 md:pt-6 max-w-5xl mx-auto space-y-12">
       <header className="text-center">
@@ -26,7 +28,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws }) => {
         {matches.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {matches.map(match => (
-              <div key={match.id} className="bg-slate-900 border border-white/10 rounded-2xl p-6 flex items-center justify-between">
+              <div key={match.id} className="group bg-slate-900 border border-white/10 rounded-2xl p-6 flex items-center justify-between relative overflow-hidden">
                 <div className="flex flex-col">
                   <span className="text-xs text-slate-500 uppercase tracking-widest mb-2">
                     {format(new Date(match.created_at), "dd 'de' MMMM", { locale: ptBR })}
@@ -43,11 +45,20 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws }) => {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm text-slate-400 mb-1">Placar Final</div>
-                  <div className="text-xl font-mono text-orange-500 font-bold">
-                    {match.team_a_score} - {match.team_b_score}
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-sm text-slate-400 mb-1">Placar Final</div>
+                    <div className="text-xl font-mono text-orange-500 font-bold">
+                      {match.team_a_score} - {match.team_b_score}
+                    </div>
                   </div>
+                  <button 
+                    onClick={() => onDeleteMatch(match.id)}
+                    className="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    title="Excluir partida"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -66,7 +77,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws }) => {
         {draws.length > 0 ? (
           <div className="space-y-4">
             {draws.map(draw => (
-              <div key={draw.id} className="bg-slate-900/50 border border-white/10 rounded-3xl p-6">
+              <div key={draw.id} className="group bg-slate-900/50 border border-white/10 rounded-3xl p-6 relative">
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
                   <div className="flex items-center gap-3">
                     <Calendar size={18} className="text-slate-500" />
@@ -74,9 +85,18 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws }) => {
                       {format(new Date(draw.created_at), "PPP 'às' HH:mm", { locale: ptBR })}
                     </span>
                   </div>
-                  <span className="bg-orange-500/10 text-orange-500 px-3 py-1 rounded-full text-xs font-bold uppercase">
-                    {draw.teams.length} Times
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="bg-orange-500/10 text-orange-500 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                      {draw.teams.length} Times
+                    </span>
+                    <button 
+                      onClick={() => onDeleteDraw(draw.id)}
+                      className="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                      title="Excluir sorteio"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
