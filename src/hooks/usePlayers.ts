@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Player } from '../types';
 import { io, Socket } from 'socket.io-client';
 import { dbSavePlayers, dbFetchPlayers } from '../lib/supabase';
+import { generateId } from '../lib/utils';
 
 export function usePlayers(groupId: string | null) {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -62,45 +63,41 @@ export function usePlayers(groupId: string | null) {
   }, [players, groupId]);
 
   async function fetchPlayers() {
-    console.log('usePlayers: Fetching players...');
-    if (groupId) {
-      // 1. Load from localStorage first (Offline-First)
-      try {
-        const local = localStorage.getItem('voley_players_' + groupId);
-        if (local) {
-          const parsed = JSON.parse(local);
-          setPlayers(parsed);
-          setLoading(false); // Set to false immediately if we have local data
-          console.log('usePlayers: Loaded from localStorage, UI ready');
-        }
-      } catch (e) {
-        console.error('usePlayers: Error parsing from localStorage:', e);
+    if (!groupId) return;
+    
+    // 1. Load from Supabase (Source of Truth)
+    try {
+      const dbData = await dbFetchPlayers(groupId);
+      if (dbData !== null) {
+        const mappedPlayers: Player[] = dbData.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          active: p.active
+        }));
+        setPlayers(mappedPlayers);
+        localStorage.setItem('voley_players_' + groupId, JSON.stringify(mappedPlayers));
+        setLoading(false);
+        return;
       }
-
-      // 2. Load from Supabase (Background sync)
-      try {
-        const dbData = await dbFetchPlayers(groupId);
-        if (dbData && dbData.length > 0) {
-          // Map database fields back to Player type
-          const mappedPlayers: Player[] = dbData.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            active: p.active
-          }));
-          setPlayers(mappedPlayers);
-          localStorage.setItem('voley_players_' + groupId, JSON.stringify(mappedPlayers));
-          console.log('usePlayers: Synced from Supabase');
-        }
-      } catch (e) {
-        console.error('usePlayers: Error fetching from Supabase:', e);
-      }
+    } catch (e) {
+      console.error('usePlayers: Error fetching from Supabase:', e);
     }
-    setLoading(false); // Ensure loading is false even if no local data
-    console.log('usePlayers: Loading set to false');
+
+    // 2. Fallback to localStorage if Supabase fails or is empty
+    try {
+      const local = localStorage.getItem('voley_players_' + groupId);
+      if (local) {
+        setPlayers(JSON.parse(local));
+      }
+    } catch (e) {
+      console.error('usePlayers: Error parsing from localStorage:', e);
+    }
+    
+    setLoading(false);
   }
 
   const addPlayer = async (name: string) => {
-    const updated = [...players, { name, active: true, id: crypto.randomUUID() }];
+    const updated = [...players, { name, active: true, id: generateId() }];
     setPlayers(updated);
     if (groupId) {
       try {

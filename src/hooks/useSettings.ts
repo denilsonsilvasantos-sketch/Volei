@@ -73,35 +73,32 @@ export function useSettings(groupId: string | null) {
   }, [settings, groupId]);
 
   async function fetchSettings() {
-    console.log('useSettings: Fetching settings...');
-    if (groupId) {
-      // 1. Load from localStorage first (Offline-First)
-      try {
-        const local = localStorage.getItem('voley_settings_' + groupId);
-        if (local) {
-          const parsed = JSON.parse(local);
-          setSettings(parsed);
-          setLoading(false); // Set to false immediately if we have local data
-          console.log('useSettings: Loaded from localStorage, UI ready');
-        }
-      } catch (e) {
-        console.error('useSettings: Error parsing from localStorage:', e);
+    if (!groupId) return;
+    
+    // 1. Try Supabase (Source of Truth)
+    try {
+      const dbData = await dbFetchSettings(groupId);
+      if (dbData !== null) {
+        setSettings(dbData);
+        localStorage.setItem('voley_settings_' + groupId, JSON.stringify(dbData));
+        setLoading(false);
+        return;
       }
-
-      // 2. Load from Supabase (Background sync)
-      try {
-        const dbData = await dbFetchSettings(groupId);
-        if (dbData) {
-          setSettings(dbData);
-          localStorage.setItem('voley_settings_' + groupId, JSON.stringify(dbData));
-          console.log('useSettings: Synced from Supabase');
-        }
-      } catch (e) {
-        console.error('useSettings: Error fetching from Supabase:', e);
-      }
+    } catch (e) {
+      console.error('useSettings: Error fetching from Supabase:', e);
     }
-    setLoading(false); // Ensure loading is false even if no local data
-    console.log('useSettings: Loading set to false');
+
+    // 2. Fallback to localStorage
+    try {
+      const local = localStorage.getItem('voley_settings_' + groupId);
+      if (local) {
+        setSettings(JSON.parse(local));
+      }
+    } catch (e) {
+      console.error('useSettings: Error parsing from localStorage:', e);
+    }
+    
+    setLoading(false);
   }
 
   const updateSettings = async (newSettings: Partial<Settings>) => {

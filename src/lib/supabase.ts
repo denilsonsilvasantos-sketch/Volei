@@ -110,29 +110,13 @@ export async function dbFetchSettings(groupId: string) {
 
 // --- Players ---
 export async function dbSavePlayers(groupId: string, players: any[]) {
-  if (!isSupabaseConfigured) {
-    console.warn('Supabase: Cannot save players - Not configured');
-    return;
-  }
-  
-  console.log(`Supabase: Saving ${players.length} players for group ${groupId}`);
+  if (!isSupabaseConfigured) return;
   
   try {
-    // For simplicity in this demo, we'll replace all players for the group
-    const { error: deleteError } = await supabase
-      .from('players')
-      .delete()
-      .eq('group_id', groupId);
+    // Delete existing players for this group to avoid duplicates/orphans
+    await supabase.from('players').delete().eq('group_id', groupId);
 
-    if (deleteError) {
-      console.error('Supabase: Error clearing players:', deleteError);
-      return;
-    }
-
-    if (players.length === 0) {
-      console.log('Supabase: No players to save (list empty)');
-      return;
-    }
+    if (players.length === 0) return;
 
     const playersToInsert = players.map(p => ({
       id: p.id,
@@ -141,40 +125,27 @@ export async function dbSavePlayers(groupId: string, players: any[]) {
       active: p.active
     }));
 
-    const { error } = await supabase
-      .from('players')
-      .insert(playersToInsert);
-
-    if (error) {
-      console.error('Supabase: Error saving players:', error);
-    } else {
-      console.log('Supabase: Players saved successfully');
-    }
+    const { error } = await supabase.from('players').insert(playersToInsert);
+    if (error) throw error;
+    console.log('Supabase: Players synced successfully');
   } catch (e) {
-    console.error('Supabase: Unexpected error in dbSavePlayers:', e);
+    console.error('Supabase: Critical error saving players:', e);
   }
 }
 
 export async function dbFetchPlayers(groupId: string) {
   if (!isSupabaseConfigured) return null;
-  
-  console.log(`Supabase: Fetching players for group ${groupId}`);
-  
   try {
     const { data, error } = await supabase
       .from('players')
       .select('*')
-      .eq('group_id', groupId);
+      .eq('group_id', groupId)
+      .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Supabase: Error fetching players:', error);
-      return null;
-    }
-    
-    console.log(`Supabase: Fetched ${data?.length || 0} players`);
+    if (error) throw error;
     return data || [];
   } catch (e) {
-    console.error('Supabase: Unexpected error in dbFetchPlayers:', e);
+    console.error('Supabase: Error fetching players:', e);
     return null;
   }
 }

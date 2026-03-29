@@ -12,41 +12,38 @@ export function useHistory(groupId: string | null) {
   const hasSynced = useRef(false);
 
   const fetchHistory = async () => {
-    if (groupId) {
-      // 1. Load from localStorage first (Offline-First)
-      try {
-        const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
-        const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
-        setMatches(localMatches);
-        setDraws(localDraws);
-        setLoading(false); // Set to false immediately if we have local data
-        console.log('useHistory: Loaded from localStorage, UI ready');
-      } catch (e) {
-        console.error('useHistory: Error parsing from localStorage:', e);
-      }
+    if (!groupId) return;
+    
+    // 1. Try Supabase (Source of Truth)
+    try {
+      const [dbMatches, dbDraws] = await Promise.all([
+        dbFetchMatches(groupId),
+        dbFetchDraws(groupId)
+      ]);
 
-      // 2. Load from Supabase (Background sync)
-      try {
-        const [dbMatches, dbDraws] = await Promise.all([
-          dbFetchMatches(groupId),
-          dbFetchDraws(groupId)
-        ]);
-
-        if (dbMatches && dbMatches.length > 0) {
-          setMatches(dbMatches);
-          localStorage.setItem('voley_matches_' + groupId, JSON.stringify(dbMatches));
-        }
-        if (dbDraws && dbDraws.length > 0) {
-          setDraws(dbDraws);
-          localStorage.setItem('voley_draws_' + groupId, JSON.stringify(dbDraws));
-        }
-        console.log('useHistory: Synced from Supabase');
-      } catch (e) {
-        console.error('useHistory: Error fetching from Supabase:', e);
+      if (dbMatches !== null && dbDraws !== null) {
+        setMatches(dbMatches);
+        setDraws(dbDraws);
+        localStorage.setItem('voley_matches_' + groupId, JSON.stringify(dbMatches));
+        localStorage.setItem('voley_draws_' + groupId, JSON.stringify(dbDraws));
+        setLoading(false);
+        return;
       }
+    } catch (e) {
+      console.error('useHistory: Error fetching from Supabase:', e);
     }
+
+    // 2. Fallback to localStorage
+    try {
+      const localMatches = JSON.parse(localStorage.getItem('voley_matches_' + groupId) || '[]');
+      const localDraws = JSON.parse(localStorage.getItem('voley_draws_' + groupId) || '[]');
+      setMatches(localMatches);
+      setDraws(localDraws);
+    } catch (e) {
+      console.error('useHistory: Error parsing from localStorage:', e);
+    }
+    
     setLoading(false);
-    console.log('useHistory: Loading set to false');
   };
 
   useEffect(() => {
