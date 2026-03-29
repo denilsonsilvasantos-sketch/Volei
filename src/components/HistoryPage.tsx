@@ -54,7 +54,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws, onDele
                   </div>
                   <button 
                     onClick={() => onDeleteMatch(match.id)}
-                    className="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                     title="Excluir partida"
                   >
                     <Trash2 size={20} />
@@ -91,7 +91,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ matches, draws, onDele
                     </span>
                     <button 
                       onClick={() => onDeleteDraw(draw.id)}
-                      className="p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                      className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                       title="Excluir sorteio"
                     >
                       <Trash2 size={18} />

@@ -4,7 +4,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials missing. App will run in demo mode with local storage.');
+  console.error('Supabase: CRITICAL - VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing! Synchronization will NOT work.');
+} else {
+  console.log('Supabase: Client initialized successfully.');
 }
 
 export const supabase = createClient(

@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import { Settings as SettingsType } from '../types';
 import { Save, Palette, Volume2, Mic, Database, RefreshCw } from 'lucide-react';
 
+import { isSupabaseConfigured } from '../lib/supabase';
+
 interface SettingsPageProps {
   settings: SettingsType;
   onUpdate: (settings: Partial<SettingsType>) => void;
@@ -12,6 +14,7 @@ interface SettingsPageProps {
 export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate, onRefresh }) => {
   const [formData, setFormData] = useState(settings);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -30,6 +33,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdate(formData);
+    setShowSaved(true);
+    setTimeout(() => setShowSaved(false), 3000);
   };
 
   return (
@@ -170,14 +175,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate, 
             Sincronização de Dados
           </h2>
           <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 space-y-4 text-center md:text-left">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-slate-300">Status do Servidor:</span>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isSupabaseConfigured ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+                <span className={`text-xs font-bold ${isSupabaseConfigured ? 'text-green-500' : 'text-red-500'}`}>
+                  {isSupabaseConfigured ? 'CONECTADO' : 'DESCONECTADO'}
+                </span>
+              </div>
+            </div>
             <p className="text-sm text-slate-400">
-              Caso os dados não estejam aparecendo corretamente em outros dispositivos, você pode forçar uma sincronização com a nuvem.
+              {isSupabaseConfigured 
+                ? "Seus dados estão sendo salvos na nuvem automaticamente." 
+                : "Atenção: O banco de dados não está configurado. Seus dados ficarão salvos apenas neste navegador."}
             </p>
             <button
               type="button"
               onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all active:scale-95 text-sm w-full md:w-auto"
+              disabled={isRefreshing || !isSupabaseConfigured}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 text-white rounded-xl font-bold transition-all active:scale-95 text-sm w-full md:w-auto"
             >
               <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
               {isRefreshing ? "Sincronizando..." : "Sincronizar Agora"}
@@ -189,10 +205,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate, 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           type="submit"
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-colors"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-colors relative"
         >
           <Save size={20} />
-          Salvar Alterações
+          {showSaved ? "Configurações Salvas!" : "Salvar Alterações"}
+          {showSaved && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute -top-12 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs py-2 px-4 rounded-full font-bold shadow-xl"
+            >
+              Salvo com sucesso!
+            </motion.div>
+          )}
         </motion.button>
       </form>
     </div>
