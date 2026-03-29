@@ -19,9 +19,17 @@ export default function App() {
   const [forceLoad, setForceLoad] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<string | null>(null);
 
-  const { settings, updateSettings, loading: settingsLoading } = useSettings(groupId);
-  const { players, addPlayer, togglePlayerActive, deletePlayer, loading: playersLoading } = usePlayers(groupId);
-  const { matches, draws, addMatch, addDraw, deleteMatch, deleteDraw, loading: historyLoading } = useHistory(groupId);
+  const { settings, updateSettings, loading: settingsLoading, refresh: refreshSettings } = useSettings(groupId);
+  const { players, addPlayer, togglePlayerActive, deletePlayer, loading: playersLoading, refresh: refreshPlayers } = usePlayers(groupId);
+  const { matches, draws, addMatch, addDraw, deleteMatch, deleteDraw, loading: historyLoading, refresh: refreshHistory } = useHistory(groupId);
+
+  const handleRefreshAll = async () => {
+    await Promise.all([
+      refreshSettings(),
+      refreshPlayers(),
+      refreshHistory()
+    ]);
+  };
 
   useEffect(() => {
     console.log('App: Loading States - Settings:', settingsLoading, 'Players:', playersLoading, 'History:', historyLoading, 'ForceLoad:', forceLoad);
@@ -98,7 +106,7 @@ export default function App() {
       case 'scoreboard':
         return <Scoreboard settings={settings} groupId={groupId} onSaveMatch={addMatch} />;
       case 'settings':
-        return <SettingsPage settings={settings} onUpdate={updateSettings} />;
+        return <SettingsPage settings={settings} onUpdate={updateSettings} onRefresh={handleRefreshAll} />;
       case 'players':
         return <PlayersPage players={players} onAdd={addPlayer} onToggle={togglePlayerActive} onDelete={deletePlayer} />;
       case 'shuffler':

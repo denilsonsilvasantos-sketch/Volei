@@ -43,6 +43,13 @@ export function useSettings(groupId: string | null) {
           setTimeout(() => { isRemoteUpdate.current = false; }, 100);
         });
 
+        socket.on('request-state', () => {
+          console.log('useSettings: Received request-state');
+          if (settings) {
+            socket.emit('update-state', { groupId: groupId + '_settings', state: settings });
+          }
+        });
+
         const timeout = setTimeout(() => {
           console.log('useSettings: Sync timeout reached');
           hasSynced.current = true;
@@ -112,5 +119,5 @@ export function useSettings(groupId: string | null) {
     }
   };
 
-  return { settings, updateSettings, loading };
+  return { settings, updateSettings, loading, refresh: fetchSettings };
 }

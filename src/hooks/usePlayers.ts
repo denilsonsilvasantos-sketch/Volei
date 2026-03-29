@@ -32,6 +32,13 @@ export function usePlayers(groupId: string | null) {
           setTimeout(() => { isRemoteUpdate.current = false; }, 100);
         });
 
+        socket.on('request-state', () => {
+          console.log('usePlayers: Received request-state');
+          if (players.length > 0) {
+            socket.emit('update-state', { groupId: groupId + '_players', state: players });
+          }
+        });
+
         const timeout = setTimeout(() => {
           console.log('usePlayers: Sync timeout reached');
           hasSynced.current = true;
@@ -131,5 +138,5 @@ export function usePlayers(groupId: string | null) {
     }
   };
 
-  return { players, addPlayer, togglePlayerActive, deletePlayer, loading };
+  return { players, addPlayer, togglePlayerActive, deletePlayer, loading, refresh: fetchPlayers };
 }

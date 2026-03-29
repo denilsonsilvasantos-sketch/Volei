@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Settings as SettingsType } from '../types';
-import { Save, Palette, Volume2, Mic } from 'lucide-react';
+import { Save, Palette, Volume2, Mic, Database, RefreshCw } from 'lucide-react';
 
 interface SettingsPageProps {
   settings: SettingsType;
   onUpdate: (settings: Partial<SettingsType>) => void;
+  onRefresh: () => Promise<void>;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate, onRefresh }) => {
   const [formData, setFormData] = useState(settings);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Update local form if settings change from server
   useEffect(() => {
@@ -150,6 +161,27 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ settings, onUpdate }
                 className="w-6 h-6 accent-orange-500 rounded-lg"
               />
             </label>
+          </div>
+        </section>
+
+        <section className="bg-slate-900/50 border border-white/10 rounded-3xl p-6 space-y-6">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <Database size={20} className="text-orange-500" />
+            Sincronização de Dados
+          </h2>
+          <div className="p-4 bg-slate-800/50 rounded-2xl border border-white/5 space-y-4 text-center md:text-left">
+            <p className="text-sm text-slate-400">
+              Caso os dados não estejam aparecendo corretamente em outros dispositivos, você pode forçar uma sincronização com a nuvem.
+            </p>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all active:scale-95 text-sm w-full md:w-auto"
+            >
+              <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
+              {isRefreshing ? "Sincronizando..." : "Sincronizar Agora"}
+            </button>
           </div>
         </section>
 
